@@ -26,7 +26,7 @@
 **Question:** What are some reasons to prefer training our tokenizer on UTF-8 encoded bytes, rather than UTF-16 or UTF-32?  
 **Deliverable:** A one-to-two sentence response.
 
-**Answer:**
+**Answer:** UTF-8 is already widely used across modern systems, operating systems, and applications, so training on UTF-8 data usually leads to fewer compatibility issues in real pipelines. Compared with UTF-16 or UTF-32, UTF-8 also tends to be a more practical compression tradeoff for mixed-language text (for example, many English characters use one byte while many Chinese characters use three bytes), which is often more suitable for tokenizer and model training.
 
 ### (b)
 **Question:** Consider the following (incorrect) function intended to decode a UTF-8 byte string into a Unicode string. Why is this function incorrect? Provide an example input byte string that yields incorrect results.
@@ -38,15 +38,15 @@ def decode_utf8_bytes_to_str_wrong(bytestring):
 
 **Deliverable:** An example input byte string for which `decode_utf8_bytes_to_str_wrong` produces incorrect output, with a one-sentence explanation.
 
-**Answer (example bytes):**  
-**Answer (explanation):**
+**Answer (example bytes):** `b'\xe6\xb1\x89'`  
+**Answer (explanation):** This function is incorrect because it decodes UTF-8 one byte at a time; for multi-byte characters such as `汉` (`b'\xe6\xb1\x89'`), the bytes must be decoded together, otherwise it raises a `UnicodeDecodeError` or produces incorrect decoding behavior.
 
 ### (c)
 **Question:** Give a two-byte sequence that does not decode to any Unicode character(s).  
 **Deliverable:** An example, with a one-sentence explanation.
 
-**Answer (example bytes):**  
-**Answer (explanation):**
+**Answer (example bytes):** `b'\xff\xff'`  
+**Answer (explanation):** This is invalid in UTF-8 because `0xFF` is not allowed as a valid UTF-8 byte in any position.
 
 ---
 
