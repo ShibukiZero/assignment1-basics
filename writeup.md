@@ -4,19 +4,19 @@
 **Question:** What Unicode character does `chr(0)` return?  
 **Deliverable:** A one-sentence response.
 
-**Answer:**
+**Answer:** `chr(0)` returns the null character (Unicode code point U+0000, often written as `'\x00'`).
 
 ### (b)
 **Question:** How does this character’s string representation (`__repr__()`) differ from its printed representation?  
 **Deliverable:** A one-sentence response.
 
-**Answer:**
+**Answer:** Its string representation is the escaped form (e.g., `'\x00'`), while printing it outputs an invisible control character.
 
 ### (c)
 **Question:** What happens when this character occurs in text?  
 **Deliverable:** A one-sentence response.
 
-**Answer:**
+**Answer:** When this character appears in text, it is invisible to readers and can cause issues in systems that treat null bytes as terminators or control characters.
 
 ---
 
