@@ -4,7 +4,7 @@ import heapq
 import multiprocessing as mp
 import os
 from collections import Counter, defaultdict
-from collections.abc import Iterator
+from collections.abc import Iterator, Sequence
 from pathlib import Path
 from typing import BinaryIO
 
@@ -38,7 +38,8 @@ def find_chunk_boundaries(
     """
     if desired_num_chunks <= 0:
         raise ValueError(f"Expected desired_num_chunks > 0, got {desired_num_chunks}.")
-    assert isinstance(split_special_token, bytes), "Must represent special token as a bytestring"
+    if not isinstance(split_special_token, bytes):
+        raise TypeError("split_special_token must be a bytestring.")
     if not split_special_token:
         raise ValueError("split_special_token must be non-empty.")
 
@@ -87,7 +88,7 @@ def build_initial_vocab(special_tokens: list[str]) -> Vocab:
     return vocab
 
 
-def split_on_special_tokens(text: str, special_tokens: list[str]) -> list[str]:
+def split_on_special_tokens(text: str, special_tokens: Sequence[str]) -> list[str]:
     """Split text by special tokens so merges cannot cross those boundaries.
 
     This returns only non-special segments that should be pre-tokenized.
@@ -118,7 +119,7 @@ def pretoken_to_byte_tokens(pretoken: str) -> Pretoken:
     return tuple(BYTE_TOKEN_TABLE[byte] for byte in encoded)
 
 
-def count_pretoken_strings(text: str, special_tokens: list[str]) -> Counter[str]:
+def count_pretoken_strings(text: str, special_tokens: Sequence[str]) -> Counter[str]:
     """Count pre-token strings before byte conversion."""
     pretoken_string_counts: Counter[str] = Counter()
     for segment in split_on_special_tokens(text, special_tokens):
@@ -145,12 +146,12 @@ def _count_pretokens_in_chunk(task: ChunkTask) -> Counter[str]:
 
     # Boundaries are aligned to special-token starts, so strict UTF-8 decode is expected.
     chunk_text = chunk_bytes.decode("utf-8")
-    return count_pretoken_strings(chunk_text, list(special_tokens))
+    return count_pretoken_strings(chunk_text, special_tokens)
 
 
 def build_pretoken_counts_parallel(
     input_path: str | Path,
-    special_tokens: list[str],
+    special_tokens: Sequence[str],
     num_workers: int,
     boundary_token: str = DEFAULT_PRETOKEN_BOUNDARY_TOKEN,
 ) -> PretokenCounts:
@@ -199,7 +200,7 @@ def build_pretoken_counts_parallel(
     return convert_pretoken_string_counts_to_byte_counts(pretoken_string_counts)
 
 
-def build_pretoken_counts(text: str, special_tokens: list[str]) -> PretokenCounts:
+def build_pretoken_counts(text: str, special_tokens: Sequence[str]) -> PretokenCounts:
     """Build frequency counts of byte-tokenized pre-tokens.
 
     Pipeline:
