@@ -9,6 +9,7 @@ import regex as re
 
 # GPT-2 pre-tokenization pattern from the assignment handout.
 GPT2_PRETOKEN_PATTERN = r"""'(?:[sdmt]|ll|ve|re)| ?\p{L}+| ?\p{N}+| ?[^\s\p{L}\p{N}]+|\s+(?!\S)|\s+"""
+GPT2_PRETOKEN_REGEX = re.compile(GPT2_PRETOKEN_PATTERN)
 BYTE_TOKEN_TABLE: tuple[Token, ...] = tuple(bytes([i]) for i in range(256))
 
 # Type aliases to keep BPE-related signatures readable.
@@ -53,9 +54,13 @@ def split_on_special_tokens(text: str, special_tokens: list[str]) -> list[str]:
     return [segment for segment in re.split(delimiter, text) if segment]
 
 
-def iter_pretokens(segment: str, pattern: str = GPT2_PRETOKEN_PATTERN) -> Iterator[str]:
-    """Yield GPT-2 pre-tokens using regex finditer for low memory overhead."""
-    for match in re.finditer(pattern, segment):
+def iter_pretokens(
+    segment: str,
+    pattern: str | re.Pattern = GPT2_PRETOKEN_REGEX,
+) -> Iterator[str]:
+    """Yield GPT-2 pre-tokens using a compiled regex for low overhead."""
+    compiled_pattern = re.compile(pattern) if isinstance(pattern, str) else pattern
+    for match in compiled_pattern.finditer(segment):
         yield match.group(0)
 
 
