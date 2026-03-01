@@ -4,7 +4,7 @@ import heapq
 import json
 import multiprocessing as mp
 import os
-from collections import Counter, defaultdict
+from collections import Counter, OrderedDict, defaultdict
 from collections.abc import Iterator, Sequence
 from pathlib import Path
 from typing import BinaryIO
@@ -15,6 +15,7 @@ import regex as re
 GPT2_PRETOKEN_PATTERN = r"""'(?:[sdmt]|ll|ve|re)| ?\p{L}+| ?\p{N}+| ?[^\s\p{L}\p{N}]+|\s+(?!\S)|\s+"""
 GPT2_PRETOKEN_REGEX = re.compile(GPT2_PRETOKEN_PATTERN)
 DEFAULT_PRETOKEN_BOUNDARY_TOKEN = "<|endoftext|>"
+DEFAULT_PRETOKEN_CACHE_MAX_SIZE = 100_000
 BYTE_TOKEN_TABLE: tuple[Token, ...] = tuple(bytes([i]) for i in range(256))
 
 # Type aliases to keep BPE-related signatures readable.
@@ -485,6 +486,7 @@ class Tokenizer:
         vocab: dict[int, bytes],
         merges: list[tuple[bytes, bytes]],
         special_tokens: list[str] | None = None,
+        pretoken_cache_max_size: int = DEFAULT_PRETOKEN_CACHE_MAX_SIZE,
     ) -> None:
         self.vocab: dict[int, bytes] = dict(vocab)
         self.merges: list[tuple[bytes, bytes]] = list(merges)
@@ -515,6 +517,13 @@ class Tokenizer:
         self._merge_ranks: dict[tuple[bytes, bytes], int] = {
             pair: rank for rank, pair in enumerate(self.merges)
         }
+
+        if pretoken_cache_max_size < 0:
+            raise ValueError(f"Expected pretoken_cache_max_size >= 0, got {pretoken_cache_max_size}.")
+        self._pretoken_cache_max_size = pretoken_cache_max_size
+        # Cache hot repeated pre-tokens across long corpus runs to avoid
+        # re-running the expensive merge loop for identical inputs.
+        self._pretoken_id_cache: OrderedDict[str, tuple[int, ...]] = OrderedDict()
 
     @classmethod
     def from_files(
@@ -598,8 +607,8 @@ class Tokenizer:
                 best_pair = pair
         return best_pair
 
-    def _encode_pretoken_bytes(self, pretoken: str) -> list[int]:
-        """Encode one pre-token via iterative BPE merges."""
+    def _encode_pretoken_ids_uncached(self, pretoken: str) -> tuple[int, ...]:
+        """Encode one pre-token via iterative BPE merges (no cache)."""
         sequence = pretoken_to_byte_tokens(pretoken)
 
         while True:
@@ -608,7 +617,27 @@ class Tokenizer:
                 break
             sequence = replace_pair_non_overlapping(sequence, best_pair)
 
-        return [self.token_to_id[tok] for tok in sequence]
+        return tuple(self.token_to_id[tok] for tok in sequence)
+
+    def _encode_pretoken_ids_cached(self, pretoken: str) -> tuple[int, ...]:
+        """Encode one pre-token with an LRU-style cache for repeated strings."""
+        if self._pretoken_cache_max_size == 0:
+            return self._encode_pretoken_ids_uncached(pretoken)
+
+        cached = self._pretoken_id_cache.get(pretoken)
+        if cached is not None:
+            self._pretoken_id_cache.move_to_end(pretoken)
+            return cached
+
+        encoded = self._encode_pretoken_ids_uncached(pretoken)
+        self._pretoken_id_cache[pretoken] = encoded
+        if len(self._pretoken_id_cache) > self._pretoken_cache_max_size:
+            self._pretoken_id_cache.popitem(last=False)
+        return encoded
+
+    def _encode_pretoken_bytes(self, pretoken: str) -> list[int]:
+        """Encode one pre-token via iterative BPE merges."""
+        return list(self._encode_pretoken_ids_cached(pretoken))
 
     def encode(self, text: str) -> list[int]:
         """Encode text into token IDs."""
@@ -620,7 +649,7 @@ class Tokenizer:
                 continue
 
             for pretoken in iter_pretokens(segment):
-                ids.extend(self._encode_pretoken_bytes(pretoken))
+                ids.extend(self._encode_pretoken_ids_cached(pretoken))
 
         return ids
 
