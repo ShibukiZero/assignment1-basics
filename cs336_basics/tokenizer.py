@@ -9,6 +9,7 @@ import regex as re
 
 # GPT-2 pre-tokenization pattern from the assignment handout.
 GPT2_PRETOKEN_PATTERN = r"""'(?:[sdmt]|ll|ve|re)| ?\p{L}+| ?\p{N}+| ?[^\s\p{L}\p{N}]+|\s+(?!\S)|\s+"""
+BYTE_TOKEN_TABLE: tuple[Token, ...] = tuple(bytes([i]) for i in range(256))
 
 # Type aliases to keep BPE-related signatures readable.
 Token = bytes
@@ -61,7 +62,7 @@ def iter_pretokens(segment: str, pattern: str = GPT2_PRETOKEN_PATTERN) -> Iterat
 def pretoken_to_byte_tokens(pretoken: str) -> Pretoken:
     """Convert one pre-token string into a tuple of single-byte tokens."""
     encoded = pretoken.encode("utf-8")
-    return tuple(bytes([byte]) for byte in encoded)
+    return tuple(BYTE_TOKEN_TABLE[byte] for byte in encoded)
 
 
 def build_pretoken_counts(text: str, special_tokens: list[str]) -> PretokenCounts:
@@ -70,14 +71,18 @@ def build_pretoken_counts(text: str, special_tokens: list[str]) -> PretokenCount
     Pipeline:
     1) Split on special tokens (as hard boundaries).
     2) GPT-2 pre-tokenize each non-special segment.
-    3) Convert each pre-token into tuple[bytes, ...].
-    4) Aggregate counts in a Counter.
+    3) Count pre-token strings.
+    4) Convert each unique pre-token once into tuple[bytes, ...].
+    5) Aggregate weighted counts in a Counter.
     """
-    counts: PretokenCounts = Counter()
-
+    pretoken_string_counts: Counter[str] = Counter()
     for segment in split_on_special_tokens(text, special_tokens):
         for pretoken in iter_pretokens(segment):
-            counts[pretoken_to_byte_tokens(pretoken)] += 1
+            pretoken_string_counts[pretoken] += 1
+
+    counts: PretokenCounts = Counter()
+    for pretoken, freq in pretoken_string_counts.items():
+        counts[pretoken_to_byte_tokens(pretoken)] += freq
 
     return counts
 
