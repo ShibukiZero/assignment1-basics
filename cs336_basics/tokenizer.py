@@ -44,7 +44,9 @@ def split_on_special_tokens(text: str, special_tokens: list[str]) -> list[str]:
     if not special_tokens:
         return [text]
 
-    delimiter = "|".join(re.escape(token) for token in special_tokens)
+    # Match longer specials first to avoid partial matches when specials overlap.
+    ordered_special_tokens = sorted(special_tokens, key=len, reverse=True)
+    delimiter = "|".join(re.escape(token) for token in ordered_special_tokens)
     return [segment for segment in re.split(delimiter, text) if segment]
 
 
@@ -116,8 +118,20 @@ def replace_pair_non_overlapping(
     - non-overlapping replacements
     - for (A, A, A) with pair (A, A), output must be (AA, A)
     """
-    # TODO: implement pointer-based replacement scan.
-    raise NotImplementedError
+    if merged_token is None:
+        merged_token = pair[0] + pair[1]
+
+    merged_sequence: list[Token] = []
+    idx = 0
+    while idx < len(sequence):
+        if idx + 1 < len(sequence) and (sequence[idx], sequence[idx + 1]) == pair:
+            merged_sequence.append(merged_token)
+            idx += 2
+        else:
+            merged_sequence.append(sequence[idx])
+            idx += 1
+
+    return tuple(merged_sequence)
 
 
 def apply_merge_to_pretoken_counts(
@@ -130,8 +144,15 @@ def apply_merge_to_pretoken_counts(
     This is the correct-first implementation path. It scans all unique pre-token
     keys each merge round. You can optimize later by indexing affected sequences.
     """
-    # TODO: use replace_pair_non_overlapping for each sequence and rebuild Counter.
-    raise NotImplementedError
+    if merged_token is None:
+        merged_token = pair[0] + pair[1]
+
+    updated_counts: PretokenCounts = Counter()
+    for pretoken, freq in pretoken_counts.items():
+        replaced = replace_pair_non_overlapping(pretoken, pair, merged_token)
+        updated_counts[replaced] += freq
+
+    return updated_counts
 
 
 def train_bpe(
@@ -154,6 +175,9 @@ def train_bpe(
         vocab: Mapping from token id to token bytes.
         merges: Merge operations in order of creation.
     """
+    # Reserved for future optional knobs (profiling hooks, debug switches, etc.).
+    _ = kwargs
+
     if vocab_size <= 0:
         raise ValueError(f"Expected vocab_size > 0, got {vocab_size}.")
 
@@ -162,6 +186,7 @@ def train_bpe(
 
     # Step 2) Initialize vocabulary (base bytes + unique special tokens).
     vocab = build_initial_vocab(special_tokens)
+    vocab_values = set(vocab.values())
     merges: list[Pair] = []
 
     if vocab_size < len(vocab):
@@ -184,14 +209,10 @@ def train_bpe(
 
         merged_token = best_pair[0] + best_pair[1]
 
-        # TODO: append merge, add merged token to vocab, and update sequences.
-        # merges.append(best_pair)
-        # if merged_token not in set(vocab.values()):
-        #     vocab[len(vocab)] = merged_token
-        # pretoken_counts = apply_merge_to_pretoken_counts(pretoken_counts, best_pair, merged_token)
-
-        raise NotImplementedError(
-            "train_bpe scaffold is ready. Next TODO: merge bookkeeping + sequence update."
-        )
+        merges.append(best_pair)
+        if merged_token not in vocab_values:
+            vocab[len(vocab)] = merged_token
+            vocab_values.add(merged_token)
+        pretoken_counts = apply_merge_to_pretoken_counts(pretoken_counts, best_pair, merged_token)
 
     return vocab, merges
