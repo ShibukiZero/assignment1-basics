@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import heapq
+import json
 import multiprocessing as mp
 import os
 from collections import Counter, defaultdict
@@ -9,6 +10,7 @@ from pathlib import Path
 from typing import BinaryIO
 
 import regex as re
+from cmath import inf
 
 # GPT-2 pre-tokenization pattern from the assignment handout.
 GPT2_PRETOKEN_PATTERN = r"""'(?:[sdmt]|ll|ve|re)| ?\p{L}+| ?\p{N}+| ?[^\s\p{L}\p{N}]+|\s+(?!\S)|\s+"""
@@ -474,3 +476,186 @@ def train_bpe(
                 push_pair_snapshot(pair_heap, pair, pair_counts)
 
     return vocab, merges
+
+
+class Tokenizer:
+    """Byte-level BPE tokenizer scaffold for assignment section 2.6.
+
+    This class intentionally keeps the core encode path as TODO checkpoints so
+    you can complete and verify each algorithmic step incrementally.
+    """
+
+    def __init__(
+        self,
+        vocab: dict[int, bytes],
+        merges: list[tuple[bytes, bytes]],
+        special_tokens: list[str] | None = None,
+    ) -> None:
+        self.vocab: dict[int, bytes] = dict(vocab)
+        self.merges: list[tuple[bytes, bytes]] = list(merges)
+        self.special_tokens: list[str] = list(special_tokens or [])
+
+        # Build fast lookup tables.
+        self.token_to_id: dict[bytes, int] = {}
+        for token_id, token_bytes in self.vocab.items():
+            if token_bytes in self.token_to_id:
+                raise ValueError("Vocabulary bytes must be unique across token IDs.")
+            self.token_to_id[token_bytes] = token_id
+
+        # Ensure configured special tokens exist in vocab.
+        for special_token in self.special_tokens:
+            special_token_bytes = special_token.encode("utf-8")
+            if special_token_bytes not in self.token_to_id:
+                new_id = max(self.vocab.keys(), default=-1) + 1
+                self.vocab[new_id] = special_token_bytes
+                self.token_to_id[special_token_bytes] = new_id
+
+        # Sort by length desc so overlapping specials prefer the longest match.
+        self._ordered_special_tokens = sorted(self.special_tokens, key=len, reverse=True)
+        self._special_token_to_id = {
+            token: self.token_to_id[token.encode("utf-8")] for token in self._ordered_special_tokens
+        }
+
+        # pair -> merge rank (smaller rank means earlier merge and higher priority).
+        self._merge_ranks: dict[tuple[bytes, bytes], int] = {
+            pair: rank for rank, pair in enumerate(self.merges)
+        }
+
+    @classmethod
+    def from_files(
+        cls,
+        vocab_filepath: str | os.PathLike,
+        merges_filepath: str | os.PathLike,
+        special_tokens: list[str] | None = None,
+    ) -> Tokenizer:
+        """Load a tokenizer from serialized vocab/merges files.
+
+        Supported formats:
+        - vocab: list[{"id": int, "bytes_hex": str, ...}] (current experiment output)
+        - merges: list[{"token_1_hex": str, "token_2_hex": str, ...}] (current experiment output)
+        """
+        vocab_raw = json.loads(Path(vocab_filepath).read_text(encoding="utf-8"))
+        merges_raw = json.loads(Path(merges_filepath).read_text(encoding="utf-8"))
+
+        if not isinstance(vocab_raw, list):
+            raise ValueError("Unsupported vocab format in from_files; expected a JSON list.")
+        if not isinstance(merges_raw, list):
+            raise ValueError("Unsupported merges format in from_files; expected a JSON list.")
+
+        vocab: dict[int, bytes] = {}
+        for row in vocab_raw:
+            if not isinstance(row, dict) or "id" not in row or "bytes_hex" not in row:
+                raise ValueError("Malformed vocab row; expected {'id', 'bytes_hex'} fields.")
+            vocab[int(row["id"])] = bytes.fromhex(str(row["bytes_hex"]))
+
+        merges: list[tuple[bytes, bytes]] = []
+        for row in merges_raw:
+            if not isinstance(row, dict) or "token_1_hex" not in row or "token_2_hex" not in row:
+                raise ValueError("Malformed merges row; expected {'token_1_hex', 'token_2_hex'} fields.")
+            merges.append((bytes.fromhex(str(row["token_1_hex"])), bytes.fromhex(str(row["token_2_hex"]))))
+
+        return cls(vocab=vocab, merges=merges, special_tokens=special_tokens)
+
+    def _split_text_preserving_special_tokens(self, text: str) -> list[tuple[bool, str]]:
+        """Split text into [(is_special, segment)] while preserving special tokens.
+
+        TODO checkpoint:
+        - Confirm this behavior against overlapping special-token tests.
+        """
+        if not self._ordered_special_tokens:
+            return [(False, text)] if text else []
+
+        parts: list[tuple[bool, str]] = []
+        index = 0
+        while index < len(text):
+            matched_special: str | None = None
+            for special_token in self._ordered_special_tokens:
+                if text.startswith(special_token, index):
+                    matched_special = special_token
+                    break
+
+            if matched_special is not None:
+                parts.append((True, matched_special))
+                index += len(matched_special)
+                continue
+
+            next_special_start = len(text)
+            for special_token in self._ordered_special_tokens:
+                pos = text.find(special_token, index)
+                if pos != -1:
+                    next_special_start = min(next_special_start, pos)
+
+            if next_special_start > index:
+                parts.append((False, text[index:next_special_start]))
+            index = next_special_start
+
+        return parts
+
+    def _encode_pretoken_bytes(self, pretoken: str) -> list[int]:
+        """Encode one pre-token string to token IDs by applying BPE merges.
+
+        TODO checkpoint (core logic):
+        1) Start from byte tokens.
+        2) Repeatedly find the adjacent pair with best (lowest) merge rank.
+        3) Apply non-overlapping replacement left-to-right.
+        4) Map final token bytes to IDs.
+        """
+        sequence = pretoken_to_byte_tokens(pretoken)
+
+        while True:
+            best_rank = float("inf")
+            best_pair = None
+            for idx in range(len(sequence) - 1):
+                pair = (sequence[idx], sequence[idx+1])
+                rank = self._merge_ranks.get(pair)
+                if rank is not None and rank < best_rank:
+                    best_rank = rank
+                    best_pair = pair
+            if best_pair is None:
+                break
+            sequence = replace_pair_non_overlapping(sequence, best_pair)
+
+        return [self.token_to_id[tok] for tok in sequence]
+
+    def encode(self, text: str) -> list[int]:
+        """Encode input text into token IDs.
+
+        TODO checkpoint (integration logic):
+        - Split text while preserving special tokens.
+        - Pre-tokenize non-special segments with GPT-2 regex.
+        - Encode each pre-token independently (no cross-pretoken merge).
+        """
+        ids: list[int] = []
+        segments = self._split_text_preserving_special_tokens(text)
+        for is_special, segment in segments:
+            if is_special:
+                ids.append(self._special_token_to_id[segment])
+                continue
+
+            for pretoken in iter_pretokens(segment):
+                ids.extend(self._encode_pretoken_bytes(pretoken))
+
+        return ids
+
+    def encode_iterable(self, iterable: Iterator[str]) -> Iterator[int]:
+        """Lazily encode an iterable of text chunks/lines.
+
+        TODO checkpoint (streaming correctness):
+        - This scaffold does chunk-local encoding only.
+        - If caller chunking can split special tokens, add a carry buffer strategy.
+        """
+        for text_chunk in iterable:
+            yield from self.encode(text_chunk)
+
+    def decode(self, ids: list[int]) -> str:
+        """Decode token IDs into UTF-8 text.
+
+        TODO checkpoint:
+        - Keep `errors='replace'` to satisfy malformed-byte behavior in section 2.6.
+        """
+        token_bytes: list[bytes] = []
+        for token_id in ids:
+            if token_id not in self.vocab:
+                raise KeyError(f"Unknown token id during decode: {token_id}")
+            token_bytes.append(self.vocab[token_id])
+        return b"".join(token_bytes).decode("utf-8", errors="replace")
