@@ -17,8 +17,8 @@ This directory stores the finalized tokenizer-training artifacts for TinyStories
 - `terminal.log`: terminal output from the run
 
 ## Key results (from `report.json`)
-- Elapsed seconds: `37.647`
-- Peak RSS (main process, GB): `0.233`
+- Elapsed seconds: `63.333`
+- Peak RSS (main process, GB): `0.230`
 - Final vocab size: `10000`
 - Number of merges: `9743`
 - Longest token: `" responsibility"` (15 bytes)

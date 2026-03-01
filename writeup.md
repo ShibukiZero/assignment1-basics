@@ -67,9 +67,9 @@ Training a 10,000-vocabulary byte-level BPE tokenizer on the full TinyStories tr
 Profiling shows that after pre-tokenization parallelization, the dominant cost shifts to the merge stage, especially best-pair selection and heap-based pair-count maintenance (e.g., `pop_best_pair_lazy` and `_heapq.heappop`-related paths). In other words, regex pre-tokenization is no longer the primary bottleneck in the optimized implementation.
 
 **Evidence paths (profiles/logs):**
-- `artifacts/tokenizers/tinystories_10k_train_w16/report.json`
-- `artifacts/tokenizers/tinystories_10k_train_w16/train.prof`
-- `artifacts/tokenizers/tinystories_10k_train_w16/README.md`
+- `artifacts/experiments/tokenizer/tinystories_10k_train_w16/report.json`
+- `artifacts/experiments/tokenizer/tinystories_10k_train_w16/train.prof`
+- `artifacts/experiments/tokenizer/tinystories_10k_train_w16/README.md`
 
 ---
 
@@ -90,9 +90,9 @@ Training the 32,000-vocabulary byte-level BPE tokenizer on OpenWebText completed
 The TinyStories tokenizer (10K vocab) is more concentrated on simple narrative English (its longest token is `" responsibility"` at 15 bytes), while the OpenWebText tokenizer (32K vocab) captures a much broader and noisier web distribution, including long punctuation-heavy tokens. In practice, the OWT tokenizer should generally compress OWT-like text better, while the TinyStories tokenizer is more specialized to children-story style text.
 
 **Evidence paths (artifacts/logs):**
-- `artifacts/tokenizers/tinystories_10k_train_w16/report.json`
-- `artifacts/tokenizers/owt_32k_train_w16/report.json`
-- `artifacts/tokenizers/owt_32k_train_w16/README.md`
+- `artifacts/experiments/tokenizer/tinystories_10k_train_w16/report.json`
+- `artifacts/experiments/tokenizer/owt_32k_train_w16/report.json`
+- `artifacts/experiments/tokenizer/owt_32k_train_w16/README.md`
 
 ---
 

@@ -10,12 +10,16 @@ from dataclasses import asdict, dataclass
 from pathlib import Path
 
 # Support both:
-# 1) `python -m cs336_basics.train_bpe_experiment` (module mode)
-# 2) `python cs336_basics/train_bpe_experiment.py` (direct script mode, no install)
+# 1) `python -m cs336_basics.experiments.train_bpe_experiment` (module mode)
+# 2) `python cs336_basics/experiments/train_bpe_experiment.py` (direct script mode)
 if __package__:
-    from .tokenizer import train_bpe
+    from ..tokenizer import train_bpe
 else:
-    from tokenizer import train_bpe
+    # Direct script mode: add repository root to import path.
+    repo_root = Path(__file__).resolve().parents[2]
+    if str(repo_root) not in sys.path:
+        sys.path.insert(0, str(repo_root))
+    from cs336_basics.tokenizer import train_bpe
 
 
 @dataclass
@@ -212,3 +216,4 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
+
