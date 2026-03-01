@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from collections import Counter
+from collections import Counter, defaultdict
 from collections.abc import Iterator
 from pathlib import Path
 
@@ -92,6 +92,23 @@ def count_adjacent_pairs(pretoken_counts: PretokenCounts) -> Counter[Pair]:
     return pair_counts
 
 
+def count_pairs_in_sequence(sequence: Pretoken) -> Counter[Pair]:
+    """Count adjacent pairs within one sequence (unweighted)."""
+    local_counts: Counter[Pair] = Counter()
+    for i in range(len(sequence) - 1):
+        local_counts[(sequence[i], sequence[i + 1])] += 1
+    return local_counts
+
+
+def build_pair_to_sequences_index(pretoken_counts: PretokenCounts) -> dict[Pair, set[Pretoken]]:
+    """Build inverted index: pair -> set of pretoken sequences containing that pair."""
+    index: dict[Pair, set[Pretoken]] = defaultdict(set)
+    for sequence in pretoken_counts.keys():
+        for pair in count_pairs_in_sequence(sequence):
+            index[pair].add(sequence)
+    return index
+
+
 def select_best_pair(pair_counts: Counter[Pair]) -> Pair | None:
     """Select the next merge pair.
 
@@ -99,11 +116,15 @@ def select_best_pair(pair_counts: Counter[Pair]) -> Pair | None:
     - maximize frequency first
     - if tied, pick the lexicographically greater pair
     """
-    if not pair_counts:
-        return None
-
-    # tuple comparison gives: max by count, then by pair lexicographic order.
-    return max(pair_counts.items(), key=lambda item: (item[1], item[0]))[0]
+    best_pair: Pair | None = None
+    best_count = 0
+    for pair, count in pair_counts.items():
+        if count <= 0:
+            continue
+        if best_pair is None or count > best_count or (count == best_count and pair > best_pair):
+            best_pair = pair
+            best_count = count
+    return best_pair
 
 
 def replace_pair_non_overlapping(
@@ -197,10 +218,11 @@ def train_bpe(
 
     # Step 3) Build pre-token counts once.
     pretoken_counts = build_pretoken_counts(text, special_tokens)
+    pair_counts = count_adjacent_pairs(pretoken_counts)
+    pair_to_sequences = build_pair_to_sequences_index(pretoken_counts)
 
     # Step 4) Iteratively learn merges until reaching target vocab size.
     while len(vocab) < vocab_size:
-        pair_counts = count_adjacent_pairs(pretoken_counts)
         best_pair = select_best_pair(pair_counts)
 
         # Stop early if there are no merge candidates left.
@@ -213,6 +235,52 @@ def train_bpe(
         if merged_token not in vocab_values:
             vocab[len(vocab)] = merged_token
             vocab_values.add(merged_token)
-        pretoken_counts = apply_merge_to_pretoken_counts(pretoken_counts, best_pair, merged_token)
+
+        affected_sequences = list(pair_to_sequences.get(best_pair, ()))
+        if not affected_sequences:
+            # Stale candidate, remove and continue.
+            pair_counts.pop(best_pair, None)
+            continue
+
+        # Snapshot original frequencies to prevent same-round double processing.
+        original_freqs = {
+            sequence: pretoken_counts.get(sequence, 0)
+            for sequence in affected_sequences
+            if pretoken_counts.get(sequence, 0) > 0
+        }
+        if not original_freqs:
+            pair_counts.pop(best_pair, None)
+            continue
+
+        new_sequence_additions: Counter[Pretoken] = Counter()
+
+        # Phase 1: remove old sequence contributions.
+        for old_sequence, freq in original_freqs.items():
+            pretoken_counts.pop(old_sequence, None)
+            old_local_pairs = count_pairs_in_sequence(old_sequence)
+
+            for pair, local_count in old_local_pairs.items():
+                # Update inverted index: old sequence no longer contributes this pair.
+                sequences = pair_to_sequences.get(pair)
+                if sequences is not None:
+                    sequences.discard(old_sequence)
+                    if not sequences:
+                        pair_to_sequences.pop(pair, None)
+
+                # Update global weighted pair counts.
+                pair_counts[pair] -= local_count * freq
+                if pair_counts[pair] <= 0:
+                    pair_counts.pop(pair, None)
+
+            new_sequence = replace_pair_non_overlapping(old_sequence, best_pair, merged_token)
+            new_sequence_additions[new_sequence] += freq
+
+        # Phase 2: add transformed sequence contributions.
+        for new_sequence, freq in new_sequence_additions.items():
+            pretoken_counts[new_sequence] += freq
+            new_local_pairs = count_pairs_in_sequence(new_sequence)
+            for pair, local_count in new_local_pairs.items():
+                pair_to_sequences[pair].add(new_sequence)
+                pair_counts[pair] += local_count * freq
 
     return vocab, merges
