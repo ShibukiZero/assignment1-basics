@@ -10,7 +10,6 @@ from pathlib import Path
 from typing import BinaryIO
 
 import regex as re
-from cmath import inf
 
 # GPT-2 pre-tokenization pattern from the assignment handout.
 GPT2_PRETOKEN_PATTERN = r"""'(?:[sdmt]|ll|ve|re)| ?\p{L}+| ?\p{N}+| ?[^\s\p{L}\p{N}]+|\s+(?!\S)|\s+"""
@@ -479,11 +478,7 @@ def train_bpe(
 
 
 class Tokenizer:
-    """Byte-level BPE tokenizer scaffold for assignment section 2.6.
-
-    This class intentionally keeps the core encode path as TODO checkpoints so
-    you can complete and verify each algorithmic step incrementally.
-    """
+    """Byte-level BPE tokenizer for section 2.6 (encode/decode)."""
 
     def __init__(
         self,
@@ -495,7 +490,7 @@ class Tokenizer:
         self.merges: list[tuple[bytes, bytes]] = list(merges)
         self.special_tokens: list[str] = list(special_tokens or [])
 
-        # Build fast lookup tables.
+        # id -> bytes is provided; build bytes -> id for fast lookup.
         self.token_to_id: dict[bytes, int] = {}
         for token_id, token_bytes in self.vocab.items():
             if token_bytes in self.token_to_id:
@@ -510,13 +505,13 @@ class Tokenizer:
                 self.vocab[new_id] = special_token_bytes
                 self.token_to_id[special_token_bytes] = new_id
 
-        # Sort by length desc so overlapping specials prefer the longest match.
+        # Longest-first order ensures deterministic handling of overlapping specials.
         self._ordered_special_tokens = sorted(self.special_tokens, key=len, reverse=True)
         self._special_token_to_id = {
             token: self.token_to_id[token.encode("utf-8")] for token in self._ordered_special_tokens
         }
 
-        # pair -> merge rank (smaller rank means earlier merge and higher priority).
+        # pair -> merge rank (smaller rank = earlier training merge = higher priority).
         self._merge_ranks: dict[tuple[bytes, bytes], int] = {
             pair: rank for rank, pair in enumerate(self.merges)
         }
@@ -528,11 +523,11 @@ class Tokenizer:
         merges_filepath: str | os.PathLike,
         special_tokens: list[str] | None = None,
     ) -> Tokenizer:
-        """Load a tokenizer from serialized vocab/merges files.
+        """Load a tokenizer from serialized vocab/merges JSON files.
 
         Supported formats:
-        - vocab: list[{"id": int, "bytes_hex": str, ...}] (current experiment output)
-        - merges: list[{"token_1_hex": str, "token_2_hex": str, ...}] (current experiment output)
+        - vocab: list[{"id": int, "bytes_hex": str, ...}]
+        - merges: list[{"token_1_hex": str, "token_2_hex": str, ...}]
         """
         vocab_raw = json.loads(Path(vocab_filepath).read_text(encoding="utf-8"))
         merges_raw = json.loads(Path(merges_filepath).read_text(encoding="utf-8"))
@@ -557,10 +552,10 @@ class Tokenizer:
         return cls(vocab=vocab, merges=merges, special_tokens=special_tokens)
 
     def _split_text_preserving_special_tokens(self, text: str) -> list[tuple[bool, str]]:
-        """Split text into [(is_special, segment)] while preserving special tokens.
+        """Split text into ``(is_special, segment)`` pieces.
 
-        TODO checkpoint:
-        - Confirm this behavior against overlapping special-token tests.
+        Non-special segments preserve original order and can be pre-tokenized
+        independently; special segments are emitted verbatim.
         """
         if not self._ordered_special_tokens:
             return [(False, text)] if text else []
@@ -591,26 +586,24 @@ class Tokenizer:
 
         return parts
 
-    def _encode_pretoken_bytes(self, pretoken: str) -> list[int]:
-        """Encode one pre-token string to token IDs by applying BPE merges.
+    def _find_best_merge_pair(self, sequence: Pretoken) -> Pair | None:
+        """Return the highest-priority mergeable adjacent pair in the sequence."""
+        best_rank = float("inf")
+        best_pair: Pair | None = None
+        for idx in range(len(sequence) - 1):
+            pair = (sequence[idx], sequence[idx + 1])
+            rank = self._merge_ranks.get(pair)
+            if rank is not None and rank < best_rank:
+                best_rank = rank
+                best_pair = pair
+        return best_pair
 
-        TODO checkpoint (core logic):
-        1) Start from byte tokens.
-        2) Repeatedly find the adjacent pair with best (lowest) merge rank.
-        3) Apply non-overlapping replacement left-to-right.
-        4) Map final token bytes to IDs.
-        """
+    def _encode_pretoken_bytes(self, pretoken: str) -> list[int]:
+        """Encode one pre-token via iterative BPE merges."""
         sequence = pretoken_to_byte_tokens(pretoken)
 
         while True:
-            best_rank = float("inf")
-            best_pair = None
-            for idx in range(len(sequence) - 1):
-                pair = (sequence[idx], sequence[idx+1])
-                rank = self._merge_ranks.get(pair)
-                if rank is not None and rank < best_rank:
-                    best_rank = rank
-                    best_pair = pair
+            best_pair = self._find_best_merge_pair(sequence)
             if best_pair is None:
                 break
             sequence = replace_pair_non_overlapping(sequence, best_pair)
@@ -618,13 +611,7 @@ class Tokenizer:
         return [self.token_to_id[tok] for tok in sequence]
 
     def encode(self, text: str) -> list[int]:
-        """Encode input text into token IDs.
-
-        TODO checkpoint (integration logic):
-        - Split text while preserving special tokens.
-        - Pre-tokenize non-special segments with GPT-2 regex.
-        - Encode each pre-token independently (no cross-pretoken merge).
-        """
+        """Encode text into token IDs."""
         ids: list[int] = []
         segments = self._split_text_preserving_special_tokens(text)
         for is_special, segment in segments:
@@ -638,21 +625,12 @@ class Tokenizer:
         return ids
 
     def encode_iterable(self, iterable: Iterator[str]) -> Iterator[int]:
-        """Lazily encode an iterable of text chunks/lines.
-
-        TODO checkpoint (streaming correctness):
-        - This scaffold does chunk-local encoding only.
-        - If caller chunking can split special tokens, add a carry buffer strategy.
-        """
+        """Lazily encode each incoming chunk and yield token IDs."""
         for text_chunk in iterable:
             yield from self.encode(text_chunk)
 
     def decode(self, ids: list[int]) -> str:
-        """Decode token IDs into UTF-8 text.
-
-        TODO checkpoint:
-        - Keep `errors='replace'` to satisfy malformed-byte behavior in section 2.6.
-        """
+        """Decode token IDs into UTF-8 text with replacement for malformed bytes."""
         token_bytes: list[bytes] = []
         for token_id in ids:
             if token_id not in self.vocab:
