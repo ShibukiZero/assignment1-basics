@@ -57,12 +57,14 @@ def decode_utf8_bytes_to_str_wrong(bytestring):
 **Deliverable:** A one-to-two sentence response.
 
 **Answer:**
+Training a 10,000-vocabulary byte-level BPE tokenizer on the full TinyStories training set (with `<|endoftext|>` included as a special token) took about 37.65 seconds (about 0.0105 hours), with peak main-process RSS around 0.233 GB. The longest token was `" responsibility"` (15 bytes), which is plausible because BPE tends to merge frequent whitespace-prefixed word pieces.
 
 ### (b)
 **Question:** Profile your code. What part of tokenizer training takes the most time?  
 **Deliverable:** A one-to-two sentence response.
 
 **Answer:**
+Profiling shows that after pre-tokenization parallelization, the dominant cost shifts to the merge stage, especially best-pair selection and heap-based pair-count maintenance (e.g., `pop_best_pair_lazy` and `_heapq.heappop`-related paths). In other words, regex pre-tokenization is no longer the primary bottleneck in the optimized implementation.
 
 **Evidence paths (profiles/logs):**
 
