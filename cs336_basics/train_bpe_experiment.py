@@ -26,6 +26,7 @@ class TrainBPEReport:
     output_dir: str
     vocab_size_target: int
     special_tokens: list[str]
+    merge_selection: str
     elapsed_seconds: float
     max_rss_gb: float
     final_vocab_size: int
@@ -149,6 +150,7 @@ def run_experiment(args: argparse.Namespace) -> tuple[TrainBPEReport, dict[int, 
         output_dir=str(args.output_dir),
         vocab_size_target=args.vocab_size,
         special_tokens=list(args.special_token),
+        merge_selection="heap_lazy_deletion",
         elapsed_seconds=elapsed_seconds,
         max_rss_gb=get_peak_rss_gb(),
         final_vocab_size=len(vocab),
@@ -181,6 +183,7 @@ def main() -> None:
     print(f"Saved merges to: {merges_path}")
     print(f"Elapsed seconds: {report.elapsed_seconds:.3f}")
     print(f"Peak RSS (GB): {report.max_rss_gb:.3f}")
+    print(f"Merge selection: {report.merge_selection}")
     print(
         "Longest token:",
         f"id={report.longest_token_id},",

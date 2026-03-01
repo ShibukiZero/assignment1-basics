@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import heapq
 from collections import Counter, defaultdict
 from collections.abc import Iterator
 from pathlib import Path
@@ -15,6 +16,7 @@ Pair = tuple[Token, Token]
 Pretoken = tuple[Token, ...]
 PretokenCounts = Counter[Pretoken]
 Vocab = dict[int, Token]
+PairHeap = list[tuple[int, Pair]]
 
 
 def build_initial_vocab(special_tokens: list[str]) -> Vocab:
@@ -109,22 +111,59 @@ def build_pair_to_sequences_index(pretoken_counts: PretokenCounts) -> dict[Pair,
     return index
 
 
-def select_best_pair(pair_counts: Counter[Pair]) -> Pair | None:
-    """Select the next merge pair.
+def build_pair_max_heap(pair_counts: Counter[Pair]) -> PairHeap:
+    """Build a max-heap of pair-count snapshots for lazy deletion.
 
-    Tie-break rule required by the assignment:
-    - maximize frequency first
-    - if tied, pick the lexicographically greater pair
+    Heap entries are (-count, pair). `pair_counts` remains the source of truth.
     """
-    best_pair: Pair | None = None
-    best_count = 0
-    for pair, count in pair_counts.items():
-        if count <= 0:
+    heap: PairHeap = [(-count, pair) for pair, count in pair_counts.items() if count > 0]
+    heapq.heapify(heap)
+    return heap
+
+
+def push_pair_snapshot(pair_heap: PairHeap, pair: Pair, pair_counts: Counter[Pair]) -> None:
+    """Push one new pair-count snapshot into heap if still active."""
+    count = pair_counts.get(pair, 0)
+    if count > 0:
+        heapq.heappush(pair_heap, (-count, pair))
+
+
+def pop_best_pair_lazy(pair_heap: PairHeap, pair_counts: Counter[Pair]) -> Pair | None:
+    """Pop best pair via heap + lazy deletion.
+
+    Lazy deletion:
+    - heap holds historical snapshots
+    - pair_counts holds the latest count
+    - stale snapshots are discarded at pop-time
+
+    Tie-break is kept consistent with assignment by selecting lexicographically
+    greatest pair among currently-valid candidates with equal count.
+    """
+    while pair_heap:
+        neg_count, pair = heapq.heappop(pair_heap)
+        candidate_count = -neg_count
+        current_count = pair_counts.get(pair, 0)
+
+        # Discard stale snapshots or inactive pairs.
+        if current_count <= 0 or current_count != candidate_count:
             continue
-        if best_pair is None or count > best_count or (count == best_count and pair > best_pair):
-            best_pair = pair
-            best_count = count
-    return best_pair
+
+        # Half-step prototype: resolve same-count ties by consuming same-count
+        # valid snapshots currently visible on the heap and picking max(pair).
+        same_count_pairs = [pair]
+        while pair_heap and -pair_heap[0][0] == candidate_count:
+            _, tied_pair = heapq.heappop(pair_heap)
+            tied_current = pair_counts.get(tied_pair, 0)
+            if tied_current == candidate_count and tied_current > 0:
+                same_count_pairs.append(tied_pair)
+
+        best_pair = max(same_count_pairs)
+        for tied_pair in same_count_pairs:
+            if tied_pair != best_pair:
+                heapq.heappush(pair_heap, (-candidate_count, tied_pair))
+        return best_pair
+
+    return None
 
 
 def replace_pair_non_overlapping(
@@ -220,10 +259,11 @@ def train_bpe(
     pretoken_counts = build_pretoken_counts(text, special_tokens)
     pair_counts = count_adjacent_pairs(pretoken_counts)
     pair_to_sequences = build_pair_to_sequences_index(pretoken_counts)
+    pair_heap = build_pair_max_heap(pair_counts)
 
     # Step 4) Iteratively learn merges until reaching target vocab size.
     while len(vocab) < vocab_size:
-        best_pair = select_best_pair(pair_counts)
+        best_pair = pop_best_pair_lazy(pair_heap, pair_counts)
 
         # Stop early if there are no merge candidates left.
         if best_pair is None:
@@ -271,6 +311,8 @@ def train_bpe(
                 pair_counts[pair] -= local_count * freq
                 if pair_counts[pair] <= 0:
                     pair_counts.pop(pair, None)
+                else:
+                    push_pair_snapshot(pair_heap, pair, pair_counts)
 
             new_sequence = replace_pair_non_overlapping(old_sequence, best_pair, merged_token)
             new_sequence_additions[new_sequence] += freq
@@ -282,5 +324,6 @@ def train_bpe(
             for pair, local_count in new_local_pairs.items():
                 pair_to_sequences[pair].add(new_sequence)
                 pair_counts[pair] += local_count * freq
+                push_pair_snapshot(pair_heap, pair, pair_counts)
 
     return vocab, merges
