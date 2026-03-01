@@ -1,15 +1,19 @@
 from __future__ import annotations
 
 import heapq
+import multiprocessing as mp
+import os
 from collections import Counter, defaultdict
 from collections.abc import Iterator
 from pathlib import Path
+from typing import BinaryIO
 
 import regex as re
 
 # GPT-2 pre-tokenization pattern from the assignment handout.
 GPT2_PRETOKEN_PATTERN = r"""'(?:[sdmt]|ll|ve|re)| ?\p{L}+| ?\p{N}+| ?[^\s\p{L}\p{N}]+|\s+(?!\S)|\s+"""
 GPT2_PRETOKEN_REGEX = re.compile(GPT2_PRETOKEN_PATTERN)
+DEFAULT_PRETOKEN_BOUNDARY_TOKEN = "<|endoftext|>"
 BYTE_TOKEN_TABLE: tuple[Token, ...] = tuple(bytes([i]) for i in range(256))
 
 # Type aliases to keep BPE-related signatures readable.
@@ -19,6 +23,50 @@ Pretoken = tuple[Token, ...]
 PretokenCounts = Counter[Pretoken]
 Vocab = dict[int, Token]
 PairHeap = list[tuple[int, Pair]]
+ChunkTask = tuple[str, int, int, tuple[str, ...]]
+
+
+def find_chunk_boundaries(
+    file: BinaryIO,
+    desired_num_chunks: int,
+    split_special_token: bytes,
+) -> list[int]:
+    """Find chunk boundaries aligned to the given special token.
+
+    This is adapted from the assignment helper logic, kept local to avoid
+    importing `pretokenization_example.py` which contains executable demo code.
+    """
+    if desired_num_chunks <= 0:
+        raise ValueError(f"Expected desired_num_chunks > 0, got {desired_num_chunks}.")
+    assert isinstance(split_special_token, bytes), "Must represent special token as a bytestring"
+    if not split_special_token:
+        raise ValueError("split_special_token must be non-empty.")
+
+    file.seek(0, os.SEEK_END)
+    file_size = file.tell()
+    file.seek(0)
+
+    chunk_size = file_size // desired_num_chunks
+    chunk_boundaries = [i * chunk_size for i in range(desired_num_chunks + 1)]
+    chunk_boundaries[-1] = file_size
+
+    mini_chunk_size = 4096
+    for bi in range(1, len(chunk_boundaries) - 1):
+        initial_position = chunk_boundaries[bi]
+        file.seek(initial_position)
+        while True:
+            mini_chunk = file.read(mini_chunk_size)
+            if mini_chunk == b"":
+                chunk_boundaries[bi] = file_size
+                break
+
+            found_at = mini_chunk.find(split_special_token)
+            if found_at != -1:
+                chunk_boundaries[bi] = initial_position + found_at
+                break
+            initial_position += mini_chunk_size
+
+    return sorted(set(chunk_boundaries))
 
 
 def build_initial_vocab(special_tokens: list[str]) -> Vocab:
@@ -70,6 +118,87 @@ def pretoken_to_byte_tokens(pretoken: str) -> Pretoken:
     return tuple(BYTE_TOKEN_TABLE[byte] for byte in encoded)
 
 
+def count_pretoken_strings(text: str, special_tokens: list[str]) -> Counter[str]:
+    """Count pre-token strings before byte conversion."""
+    pretoken_string_counts: Counter[str] = Counter()
+    for segment in split_on_special_tokens(text, special_tokens):
+        for pretoken in iter_pretokens(segment):
+            pretoken_string_counts[pretoken] += 1
+    return pretoken_string_counts
+
+
+def convert_pretoken_string_counts_to_byte_counts(pretoken_string_counts: Counter[str]) -> PretokenCounts:
+    """Convert pre-token string counts into byte-tokenized pre-token counts."""
+    counts: PretokenCounts = Counter()
+    for pretoken, freq in pretoken_string_counts.items():
+        counts[pretoken_to_byte_tokens(pretoken)] += freq
+    return counts
+
+
+def _count_pretokens_in_chunk(task: ChunkTask) -> Counter[str]:
+    """Worker: count pre-token strings in one byte chunk of the corpus file."""
+    input_path, start, end, special_tokens = task
+
+    with Path(input_path).open("rb") as file:
+        file.seek(start)
+        chunk_bytes = file.read(end - start)
+
+    # Boundaries are aligned to special-token starts, so strict UTF-8 decode is expected.
+    chunk_text = chunk_bytes.decode("utf-8")
+    return count_pretoken_strings(chunk_text, list(special_tokens))
+
+
+def build_pretoken_counts_parallel(
+    input_path: str | Path,
+    special_tokens: list[str],
+    num_workers: int,
+    boundary_token: str = DEFAULT_PRETOKEN_BOUNDARY_TOKEN,
+) -> PretokenCounts:
+    """Build pre-token counts with multiprocessing during pre-tokenization.
+
+    Chunk boundaries are aligned to `boundary_token` so each process can count
+    independently without introducing cross-document merges.
+    """
+    corpus_path = Path(input_path)
+    split_token = boundary_token.encode("utf-8")
+    if num_workers <= 0:
+        raise ValueError(f"Expected num_workers > 0, got {num_workers}.")
+    if not split_token:
+        raise ValueError("boundary_token must be non-empty.")
+
+    with corpus_path.open("rb") as file:
+        boundaries = find_chunk_boundaries(
+            file=file,
+            desired_num_chunks=num_workers,
+            split_special_token=split_token,
+        )
+
+    if len(boundaries) < 2:
+        return Counter()
+
+    tasks: list[ChunkTask] = [
+        (str(corpus_path), start, end, tuple(special_tokens))
+        for start, end in zip(boundaries[:-1], boundaries[1:])
+        if end > start
+    ]
+
+    if not tasks:
+        return Counter()
+
+    if len(tasks) == 1:
+        return convert_pretoken_string_counts_to_byte_counts(_count_pretokens_in_chunk(tasks[0]))
+
+    worker_count = min(num_workers, len(tasks))
+    with mp.Pool(processes=worker_count) as pool:
+        shard_counters = pool.map(_count_pretokens_in_chunk, tasks)
+
+    pretoken_string_counts: Counter[str] = Counter()
+    for shard_counter in shard_counters:
+        pretoken_string_counts.update(shard_counter)
+
+    return convert_pretoken_string_counts_to_byte_counts(pretoken_string_counts)
+
+
 def build_pretoken_counts(text: str, special_tokens: list[str]) -> PretokenCounts:
     """Build frequency counts of byte-tokenized pre-tokens.
 
@@ -80,16 +209,8 @@ def build_pretoken_counts(text: str, special_tokens: list[str]) -> PretokenCount
     4) Convert each unique pre-token once into tuple[bytes, ...].
     5) Aggregate weighted counts in a Counter.
     """
-    pretoken_string_counts: Counter[str] = Counter()
-    for segment in split_on_special_tokens(text, special_tokens):
-        for pretoken in iter_pretokens(segment):
-            pretoken_string_counts[pretoken] += 1
-
-    counts: PretokenCounts = Counter()
-    for pretoken, freq in pretoken_string_counts.items():
-        counts[pretoken_to_byte_tokens(pretoken)] += freq
-
-    return counts
+    pretoken_string_counts = count_pretoken_strings(text, special_tokens)
+    return convert_pretoken_string_counts_to_byte_counts(pretoken_string_counts)
 
 
 def count_adjacent_pairs(pretoken_counts: PretokenCounts) -> Counter[Pair]:
@@ -239,20 +360,25 @@ def train_bpe(
         input_path: Path to training text.
         vocab_size: Maximum final vocabulary size, including bytes and specials.
         special_tokens: User-defined special tokens to include in vocabulary.
-        **kwargs: Reserved for optional tuning knobs (e.g. profiling hooks).
+        **kwargs: Optional tuning knobs:
+            - pretoken_workers: worker count for multiprocessing pre-tokenization.
+            - pretoken_boundary_token: special token used for chunk boundaries.
 
     Returns:
         vocab: Mapping from token id to token bytes.
         merges: Merge operations in order of creation.
     """
+    pretoken_workers = int(kwargs.pop("pretoken_workers", 1))
+    pretoken_boundary_token = str(
+        kwargs.pop("pretoken_boundary_token", DEFAULT_PRETOKEN_BOUNDARY_TOKEN),
+    )
     # Reserved for future optional knobs (profiling hooks, debug switches, etc.).
     _ = kwargs
 
     if vocab_size <= 0:
         raise ValueError(f"Expected vocab_size > 0, got {vocab_size}.")
-
-    # Step 1) Load corpus.
-    text = Path(input_path).read_text(encoding="utf-8")
+    if pretoken_workers <= 0:
+        raise ValueError(f"Expected pretoken_workers > 0, got {pretoken_workers}.")
 
     # Step 2) Initialize vocabulary (base bytes + unique special tokens).
     vocab = build_initial_vocab(special_tokens)
@@ -266,7 +392,17 @@ def train_bpe(
         )
 
     # Step 3) Build pre-token counts once.
-    pretoken_counts = build_pretoken_counts(text, special_tokens)
+    # Default path stays single-process; multiprocessing is opt-in.
+    if pretoken_workers > 1 and pretoken_boundary_token in special_tokens:
+        pretoken_counts = build_pretoken_counts_parallel(
+            input_path=input_path,
+            special_tokens=special_tokens,
+            num_workers=pretoken_workers,
+            boundary_token=pretoken_boundary_token,
+        )
+    else:
+        text = Path(input_path).read_text(encoding="utf-8")
+        pretoken_counts = build_pretoken_counts(text, special_tokens)
     pair_counts = count_adjacent_pairs(pretoken_counts)
     pair_to_sequences = build_pair_to_sequences_index(pretoken_counts)
     pair_heap = build_pair_max_heap(pair_counts)

@@ -26,6 +26,8 @@ class TrainBPEReport:
     output_dir: str
     vocab_size_target: int
     special_tokens: list[str]
+    pretoken_workers: int
+    pretoken_boundary_token: str
     merge_selection: str
     elapsed_seconds: float
     max_rss_gb: float
@@ -70,6 +72,18 @@ def parse_args() -> argparse.Namespace:
         type=Path,
         default=None,
         help="Optional cProfile output path (e.g., ./logs/train_bpe_valid.prof).",
+    )
+    parser.add_argument(
+        "--pretoken-workers",
+        type=int,
+        default=1,
+        help="Number of worker processes for pre-tokenization. 1 disables multiprocessing.",
+    )
+    parser.add_argument(
+        "--pretoken-boundary-token",
+        type=str,
+        default="<|endoftext|>",
+        help="Special token used as chunk boundary in multiprocessing pre-tokenization.",
     )
     return parser.parse_args()
 
@@ -136,6 +150,8 @@ def run_experiment(args: argparse.Namespace) -> tuple[TrainBPEReport, dict[int, 
         input_path=args.input_path,
         vocab_size=args.vocab_size,
         special_tokens=args.special_token,
+        pretoken_workers=args.pretoken_workers,
+        pretoken_boundary_token=args.pretoken_boundary_token,
     )
     elapsed_seconds = time.perf_counter() - start
 
@@ -150,6 +166,8 @@ def run_experiment(args: argparse.Namespace) -> tuple[TrainBPEReport, dict[int, 
         output_dir=str(args.output_dir),
         vocab_size_target=args.vocab_size,
         special_tokens=list(args.special_token),
+        pretoken_workers=args.pretoken_workers,
+        pretoken_boundary_token=args.pretoken_boundary_token,
         merge_selection="heap_lazy_deletion",
         elapsed_seconds=elapsed_seconds,
         max_rss_gb=get_peak_rss_gb(),
