@@ -103,24 +103,28 @@ The TinyStories tokenizer (10K vocab) is more concentrated on simple narrative E
 **Deliverable:** A one-to-two sentence response.
 
 **Answer:**
+On the 10-document samples, the TinyStories tokenizer (10K) achieves 4.0112 bytes/token on the TinyStories sample and 3.4046 bytes/token on the OpenWebText sample. The OpenWebText tokenizer (32K) achieves 4.5050 bytes/token on the OpenWebText sample and 3.8672 bytes/token on the TinyStories sample.
 
 ### (b)
 **Question:** What happens if you tokenize your OpenWebText sample with the TinyStories tokenizer? Compare compression ratio and/or qualitatively describe behavior.  
 **Deliverable:** A one-to-two sentence response.
 
 **Answer:**
+When tokenizing OpenWebText with the TinyStories tokenizer, compression drops from 4.5050 to 3.4046 bytes/token (OpenWebText tokenizer vs. TinyStories tokenizer on the same OWT sample), and token count increases from 11,201 to 14,821 for the same 50,460 bytes. This indicates stronger segmentation/fragmentation under domain mismatch: the smaller, story-domain tokenizer has fewer useful merges for noisier web text patterns.
 
 ### (c)
 **Question:** Estimate tokenizer throughput (bytes/second). How long would it take to tokenize The Pile dataset (825GB of text)?  
 **Deliverable:** A one-to-two sentence response.
 
 **Answer:**
+Using the OpenWebText tokenizer (32K) on a 50MB OpenWebText validation slice, measured throughput is about 3,787,835 bytes/second (about 867,689 tokens/second). Extrapolating linearly to 825GB gives an estimated tokenization time of about 217,802 seconds, or 60.5 hours.
 
 ### (d)
 **Question:** Using TinyStories and OpenWebText tokenizers, encode train/dev datasets into integer IDs. We recommend serializing IDs as NumPy `uint16`. Why is `uint16` appropriate?  
 **Deliverable:** (Written explanation required for `uint16` choice.)
 
 **Answer:**
+`uint16` is appropriate because both tokenizer vocabularies are far below 65,536 entries (TinyStories: 10,000; OpenWebText: 32,000), so every valid token ID fits safely in 16 bits. This cuts storage roughly in half versus `int32` while still preserving exact token IDs, and our encoding pipeline explicitly checks for overflow before casting to `uint16`, so successful corpus encoding confirms the dtype is valid for these tokenizers.
 
 ---
 
