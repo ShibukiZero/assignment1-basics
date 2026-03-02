@@ -3,6 +3,7 @@ from __future__ import annotations
 import argparse
 import json
 import time
+import codecs
 from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Iterable
@@ -206,16 +207,24 @@ def cmd_compression(args: argparse.Namespace) -> None:
     print(f"Saved compression report: {args.output_json}")
 
 
-def _iter_text_chunks(input_path: Path, chunk_size: int, max_bytes: int) -> Iterable[str]:
+def _iter_text_chunks(input_path: Path, chunk_size: int, max_bytes: int) -> Iterable[tuple[str, int]]:
     consumed = 0
-    with input_path.open("r", encoding="utf-8") as f:
+    decoder = codecs.getincrementaldecoder("utf-8")()
+    with input_path.open("rb") as f:
         while consumed < max_bytes:
             read_size = min(chunk_size, max_bytes - consumed)
-            chunk = f.read(read_size)
-            if chunk == "":
+            chunk_bytes = f.read(read_size)
+            if chunk_bytes == b"":
                 break
-            consumed += len(chunk.encode("utf-8"))
-            yield chunk
+
+            pending_before = len(decoder.getstate()[0])
+            chunk = decoder.decode(chunk_bytes, final=False)
+            pending_after = len(decoder.getstate()[0])
+            decoded_bytes = pending_before + len(chunk_bytes) - pending_after
+
+            consumed += len(chunk_bytes)
+            if chunk:
+                yield chunk, decoded_bytes
 
 
 def cmd_throughput(args: argparse.Namespace) -> None:
@@ -226,8 +235,8 @@ def cmd_throughput(args: argparse.Namespace) -> None:
         start = time.perf_counter()
         total_bytes = 0
         total_tokens = 0
-        for chunk in _iter_text_chunks(args.input_path, args.chunk_size, args.max_bytes):
-            total_bytes += len(chunk.encode("utf-8"))
+        for chunk, chunk_num_bytes in _iter_text_chunks(args.input_path, args.chunk_size, args.max_bytes):
+            total_bytes += chunk_num_bytes
             total_tokens += len(tokenizer.encode(chunk))
         elapsed = time.perf_counter() - start
         bytes_per_sec = total_bytes / elapsed if elapsed > 0 else 0.0
@@ -306,4 +315,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-
