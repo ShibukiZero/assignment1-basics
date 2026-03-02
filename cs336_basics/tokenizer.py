@@ -674,16 +674,6 @@ class Tokenizer:
                         break
             return longest
 
-        def encode_parts(parts: list[tuple[bool, str]]) -> Iterator[int]:
-            for is_special, segment in parts:
-                if not segment:
-                    continue
-                if is_special:
-                    yield self._special_token_to_id[segment]
-                    continue
-                for pretoken in iter_pretokens(segment):
-                    yield from self._encode_pretoken_ids_cached(pretoken)
-
         carry = ""
         for text_chunk in iterable:
             combined = carry + text_chunk
@@ -697,19 +687,28 @@ class Tokenizer:
                 continue
 
             parts = self._split_text_preserving_special_tokens(finalized)
-            if parts and not parts[-1][0]:
-                last_segment = parts[-1][1]
-                last_pretoken: str | None = None
-                for pretoken in iter_pretokens(last_segment):
-                    last_pretoken = pretoken
+            if not parts:
+                continue
 
-                if last_pretoken is not None:
-                    parts[-1] = (False, last_segment[: -len(last_pretoken)])
-                    if not parts[-1][1]:
-                        parts.pop()
-                    carry = last_pretoken + carry
+            for is_special, segment in parts[:-1]:
+                if is_special:
+                    yield self._special_token_to_id[segment]
+                else:
+                    for pretoken in iter_pretokens(segment):
+                        yield from self._encode_pretoken_ids_cached(pretoken)
 
-            yield from encode_parts(parts)
+            is_special_last, segment_last = parts[-1]
+            if is_special_last:
+                yield self._special_token_to_id[segment_last]
+                continue
+
+            last_pretokens = list(iter_pretokens(segment_last))
+            if not last_pretokens:
+                continue
+
+            for pretoken in last_pretokens[:-1]:
+                yield from self._encode_pretoken_ids_cached(pretoken)
+            carry = last_pretokens[-1] + carry
 
         if carry:
             yield from self.encode(carry)

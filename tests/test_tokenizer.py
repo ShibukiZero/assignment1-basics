@@ -437,6 +437,18 @@ def test_encode_iterable_matches_encode_when_pretoken_spans_chunks():
     assert list(tokenizer.encode_iterable(iter(chunked))) == tokenizer.encode(text)
 
 
+def test_encode_iterable_matches_encode_with_right_context_sensitive_whitespace():
+    tokenizer = get_tokenizer_from_vocab_merges_path(
+        vocab_path=VOCAB_PATH,
+        merges_path=MERGES_PATH,
+        special_tokens=["<|endoftext|>"],
+    )
+    text = "\n\n|"
+    chunked = ["\n", "\n|"]
+
+    assert list(tokenizer.encode_iterable(iter(chunked))) == tokenizer.encode(text)
+
+
 @pytest.mark.skipif(
     not sys.platform.startswith("linux"),
     reason="rlimit support for non-linux systems is spotty.",

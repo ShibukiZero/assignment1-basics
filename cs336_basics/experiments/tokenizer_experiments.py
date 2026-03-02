@@ -234,10 +234,13 @@ def cmd_throughput(args: argparse.Namespace) -> None:
     for repeat_idx in range(args.repeats):
         start = time.perf_counter()
         total_bytes = 0
-        total_tokens = 0
-        for chunk, chunk_num_bytes in _iter_text_chunks(args.input_path, args.chunk_size, args.max_bytes):
-            total_bytes += chunk_num_bytes
-            total_tokens += len(tokenizer.encode(chunk))
+        def _text_stream() -> Iterable[str]:
+            nonlocal total_bytes
+            for chunk, chunk_num_bytes in _iter_text_chunks(args.input_path, args.chunk_size, args.max_bytes):
+                total_bytes += chunk_num_bytes
+                yield chunk
+
+        total_tokens = sum(1 for _ in tokenizer.encode_iterable(_text_stream()))
         elapsed = time.perf_counter() - start
         bytes_per_sec = total_bytes / elapsed if elapsed > 0 else 0.0
         tokens_per_sec = total_tokens / elapsed if elapsed > 0 else 0.0
