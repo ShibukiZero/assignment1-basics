@@ -413,6 +413,30 @@ def test_encode_iterable_tinystories_matches_tiktoken():
     assert reference_tokenizer.decode(reference_ids) == corpus_contents
 
 
+def test_encode_iterable_matches_encode_when_special_token_spans_chunks():
+    tokenizer = get_tokenizer_from_vocab_merges_path(
+        vocab_path=VOCAB_PATH,
+        merges_path=MERGES_PATH,
+        special_tokens=["<|endoftext|>"],
+    )
+    text = "hello<|endoftext|>world"
+    chunked = ["hello<|en", "doftext|>wo", "rld"]
+
+    assert list(tokenizer.encode_iterable(iter(chunked))) == tokenizer.encode(text)
+
+
+def test_encode_iterable_matches_encode_when_pretoken_spans_chunks():
+    tokenizer = get_tokenizer_from_vocab_merges_path(
+        vocab_path=VOCAB_PATH,
+        merges_path=MERGES_PATH,
+        special_tokens=["<|endoftext|>"],
+    )
+    text = "indivisible"
+    chunked = ["ind", "iv", "isible"]
+
+    assert list(tokenizer.encode_iterable(iter(chunked))) == tokenizer.encode(text)
+
+
 @pytest.mark.skipif(
     not sys.platform.startswith("linux"),
     reason="rlimit support for non-linux systems is spotty.",

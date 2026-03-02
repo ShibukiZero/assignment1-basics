@@ -654,9 +654,65 @@ class Tokenizer:
         return ids
 
     def encode_iterable(self, iterable: Iterator[str]) -> Iterator[int]:
-        """Lazily encode each incoming chunk and yield token IDs."""
+        """Lazily encode chunked text while preserving cross-chunk tokenization.
+
+        The output is equivalent to ``self.encode("".join(iterable))`` but does
+        not require materializing the full input in memory.
+        """
+
+        def longest_partial_special_suffix(text: str) -> int:
+            """Length of the longest suffix that is a strict special-token prefix."""
+            if not text or not self._ordered_special_tokens:
+                return 0
+
+            longest = 0
+            for token in self._ordered_special_tokens:
+                max_prefix = min(len(token) - 1, len(text))
+                for prefix_len in range(max_prefix, longest, -1):
+                    if text.endswith(token[:prefix_len]):
+                        longest = prefix_len
+                        break
+            return longest
+
+        def encode_parts(parts: list[tuple[bool, str]]) -> Iterator[int]:
+            for is_special, segment in parts:
+                if not segment:
+                    continue
+                if is_special:
+                    yield self._special_token_to_id[segment]
+                    continue
+                for pretoken in iter_pretokens(segment):
+                    yield from self._encode_pretoken_ids_cached(pretoken)
+
+        carry = ""
         for text_chunk in iterable:
-            yield from self.encode(text_chunk)
+            combined = carry + text_chunk
+            if not combined:
+                continue
+
+            partial_special_len = longest_partial_special_suffix(combined)
+            finalized = combined[:-partial_special_len] if partial_special_len else combined
+            carry = combined[-partial_special_len:] if partial_special_len else ""
+            if not finalized:
+                continue
+
+            parts = self._split_text_preserving_special_tokens(finalized)
+            if parts and not parts[-1][0]:
+                last_segment = parts[-1][1]
+                last_pretoken: str | None = None
+                for pretoken in iter_pretokens(last_segment):
+                    last_pretoken = pretoken
+
+                if last_pretoken is not None:
+                    parts[-1] = (False, last_segment[: -len(last_pretoken)])
+                    if not parts[-1][1]:
+                        parts.pop()
+                    carry = last_pretoken + carry
+
+            yield from encode_parts(parts)
+
+        if carry:
+            yield from self.encode(carry)
 
     def decode(self, ids: list[int]) -> str:
         """Decode token IDs into UTF-8 text with replacement for malformed bytes."""
