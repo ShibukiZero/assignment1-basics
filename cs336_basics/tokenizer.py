@@ -491,6 +491,8 @@ class Tokenizer:
         self.vocab: dict[int, bytes] = dict(vocab)
         self.merges: list[tuple[bytes, bytes]] = list(merges)
         self.special_tokens: list[str] = list(special_tokens or [])
+        if any(token == "" for token in self.special_tokens):
+            raise ValueError("special_tokens must not contain empty strings.")
 
         # id -> bytes is provided; build bytes -> id for fast lookup.
         self.token_to_id: dict[bytes, int] = {}

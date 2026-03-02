@@ -61,7 +61,7 @@ def parse_args() -> argparse.Namespace:
     throughput.add_argument("--output-json", type=Path, required=True)
     throughput.add_argument("--max-bytes", type=int, default=200_000_000)
     throughput.add_argument("--chunk-size", type=int, default=1 << 20)
-    throughput.add_argument("--repeats", type=int, default=1)
+    throughput.add_argument("--repeats", type=_positive_int, default=1)
 
     encode = subparsers.add_parser(
         "encode-corpus",
@@ -73,6 +73,13 @@ def parse_args() -> argparse.Namespace:
     encode.add_argument("--output-meta-json", type=Path, required=True)
 
     return parser.parse_args()
+
+
+def _positive_int(raw: str) -> int:
+    value = int(raw)
+    if value <= 0:
+        raise argparse.ArgumentTypeError(f"Expected a positive integer, got {raw}.")
+    return value
 
 
 def _resolve_vocab_and_merges(tokenizer_dir: Path) -> tuple[Path, Path]:

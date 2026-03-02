@@ -85,6 +85,15 @@ def test_roundtrip_empty():
     assert test_string == decoded_string
 
 
+def test_rejects_empty_special_token():
+    with pytest.raises(ValueError, match="empty strings"):
+        get_tokenizer_from_vocab_merges_path(
+            vocab_path=VOCAB_PATH,
+            merges_path=MERGES_PATH,
+            special_tokens=[""],
+        )
+
+
 def test_empty_matches_tiktoken():
     reference_tokenizer = tiktoken.get_encoding("gpt2")
     tokenizer = get_tokenizer_from_vocab_merges_path(
