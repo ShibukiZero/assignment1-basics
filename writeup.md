@@ -4,19 +4,19 @@
 **Question:** What Unicode character does `chr(0)` return?  
 **Deliverable:** A one-sentence response.
 
-**Answer:**
+**Answer:** `chr(0)` returns the null character (Unicode code point U+0000, often written as `'\x00'`).
 
 ### (b)
 **Question:** How does this character’s string representation (`__repr__()`) differ from its printed representation?  
 **Deliverable:** A one-sentence response.
 
-**Answer:**
+**Answer:** Its string representation is the escaped form (e.g., `'\x00'`), while printing it outputs an invisible control character.
 
 ### (c)
 **Question:** What happens when this character occurs in text?  
 **Deliverable:** A one-sentence response.
 
-**Answer:**
+**Answer:** When this character appears in text, it is invisible to readers and can cause issues in systems that treat null bytes as terminators or control characters.
 
 ---
 
@@ -26,7 +26,7 @@
 **Question:** What are some reasons to prefer training our tokenizer on UTF-8 encoded bytes, rather than UTF-16 or UTF-32?  
 **Deliverable:** A one-to-two sentence response.
 
-**Answer:**
+**Answer:** UTF-8 is already widely used across modern systems, operating systems, and applications, so training on UTF-8 data usually leads to fewer compatibility issues in real pipelines. Compared with UTF-16 or UTF-32, UTF-8 also tends to be a more practical compression tradeoff for mixed-language text (for example, many English characters use one byte while many Chinese characters use three bytes), which is often more suitable for tokenizer and model training.
 
 ### (b)
 **Question:** Consider the following (incorrect) function intended to decode a UTF-8 byte string into a Unicode string. Why is this function incorrect? Provide an example input byte string that yields incorrect results.
@@ -38,15 +38,15 @@ def decode_utf8_bytes_to_str_wrong(bytestring):
 
 **Deliverable:** An example input byte string for which `decode_utf8_bytes_to_str_wrong` produces incorrect output, with a one-sentence explanation.
 
-**Answer (example bytes):**  
-**Answer (explanation):**
+**Answer (example bytes):** `b'\xe6\xb1\x89'`  
+**Answer (explanation):** This function is incorrect because it decodes UTF-8 one byte at a time; for multi-byte characters such as `汉` (`b'\xe6\xb1\x89'`), the bytes must be decoded together, otherwise it raises a `UnicodeDecodeError` or produces incorrect decoding behavior.
 
 ### (c)
 **Question:** Give a two-byte sequence that does not decode to any Unicode character(s).  
 **Deliverable:** An example, with a one-sentence explanation.
 
-**Answer (example bytes):**  
-**Answer (explanation):**
+**Answer (example bytes):** `b'\xff\xff'`  
+**Answer (explanation):** This is invalid in UTF-8 because `0xFF` is not allowed as a valid UTF-8 byte in any position.
 
 ---
 
@@ -57,14 +57,19 @@ def decode_utf8_bytes_to_str_wrong(bytestring):
 **Deliverable:** A one-to-two sentence response.
 
 **Answer:**
+Training a 10,000-vocabulary byte-level BPE tokenizer on the full TinyStories training set (with `<|endoftext|>` included as a special token) took about 37.65 seconds (about 0.0105 hours), with peak main-process RSS around 0.233 GB. The longest token was `" responsibility"` (15 bytes), which is plausible because BPE tends to merge frequent whitespace-prefixed word pieces.
 
 ### (b)
 **Question:** Profile your code. What part of tokenizer training takes the most time?  
 **Deliverable:** A one-to-two sentence response.
 
 **Answer:**
+Profiling shows that after pre-tokenization parallelization, the dominant cost shifts to the merge stage, especially best-pair selection and heap-based pair-count maintenance (e.g., `pop_best_pair_lazy` and `_heapq.heappop`-related paths). In other words, regex pre-tokenization is no longer the primary bottleneck in the optimized implementation.
 
 **Evidence paths (profiles/logs):**
+- `artifacts/experiments/tokenizer/tinystories_10k_train_w16/report.json`
+- `artifacts/experiments/tokenizer/tinystories_10k_train_w16/train.prof`
+- `artifacts/experiments/tokenizer/tinystories_10k_train_w16/README.md`
 
 ---
 
@@ -75,12 +80,19 @@ def decode_utf8_bytes_to_str_wrong(bytestring):
 **Deliverable:** A one-to-two sentence response.
 
 **Answer:**
+Training the 32,000-vocabulary byte-level BPE tokenizer on OpenWebText completed in about 19,509.0 seconds (about 5.42 hours), and the longest token is a 64-byte run of hyphens (`"----------------------------------------------------------------"`). This is reasonable for web text, where repeated punctuation sequences are common and can become frequent merge targets.
 
 ### (b)
 **Question:** Compare and contrast the tokenizer trained on TinyStories vs. the tokenizer trained on OpenWebText.  
 **Deliverable:** A one-to-two sentence response.
 
 **Answer:**
+The TinyStories tokenizer (10K vocab) is more concentrated on simple narrative English (its longest token is `" responsibility"` at 15 bytes), while the OpenWebText tokenizer (32K vocab) captures a much broader and noisier web distribution, including long punctuation-heavy tokens. In practice, the OWT tokenizer should generally compress OWT-like text better, while the TinyStories tokenizer is more specialized to children-story style text.
+
+**Evidence paths (artifacts/logs):**
+- `artifacts/experiments/tokenizer/tinystories_10k_train_w16/report.json`
+- `artifacts/experiments/tokenizer/owt_32k_train_w16/report.json`
+- `artifacts/experiments/tokenizer/owt_32k_train_w16/README.md`
 
 ---
 
@@ -91,24 +103,28 @@ def decode_utf8_bytes_to_str_wrong(bytestring):
 **Deliverable:** A one-to-two sentence response.
 
 **Answer:**
+On the 10-document samples, the TinyStories tokenizer (10K) achieves 4.0112 bytes/token on the TinyStories sample and 3.4046 bytes/token on the OpenWebText sample. The OpenWebText tokenizer (32K) achieves 4.5050 bytes/token on the OpenWebText sample and 3.8672 bytes/token on the TinyStories sample.
 
 ### (b)
 **Question:** What happens if you tokenize your OpenWebText sample with the TinyStories tokenizer? Compare compression ratio and/or qualitatively describe behavior.  
 **Deliverable:** A one-to-two sentence response.
 
 **Answer:**
+When tokenizing OpenWebText with the TinyStories tokenizer, compression drops from 4.5050 to 3.4046 bytes/token (OpenWebText tokenizer vs. TinyStories tokenizer on the same OWT sample), and token count increases from 11,201 to 14,821 for the same 50,460 bytes. This indicates stronger segmentation/fragmentation under domain mismatch: the smaller, story-domain tokenizer has fewer useful merges for noisier web text patterns.
 
 ### (c)
 **Question:** Estimate tokenizer throughput (bytes/second). How long would it take to tokenize The Pile dataset (825GB of text)?  
 **Deliverable:** A one-to-two sentence response.
 
 **Answer:**
+Using the OpenWebText tokenizer (32K) on a 50MB OpenWebText validation slice, measured throughput is about 3,787,835 bytes/second (about 867,689 tokens/second). Extrapolating linearly to 825GB gives an estimated tokenization time of about 217,802 seconds, or 60.5 hours.
 
 ### (d)
 **Question:** Using TinyStories and OpenWebText tokenizers, encode train/dev datasets into integer IDs. We recommend serializing IDs as NumPy `uint16`. Why is `uint16` appropriate?  
 **Deliverable:** (Written explanation required for `uint16` choice.)
 
 **Answer:**
+`uint16` is appropriate because both tokenizer vocabularies are far below 65,536 entries (TinyStories: 10,000; OpenWebText: 32,000), so every valid token ID fits safely in 16 bits. This cuts storage roughly in half versus `int32` while still preserving exact token IDs, and our encoding pipeline explicitly checks for overflow before casting to `uint16`, so successful corpus encoding confirms the dtype is valid for these tokenizers.
 
 ---
 

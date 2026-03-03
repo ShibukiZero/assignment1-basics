@@ -85,6 +85,15 @@ def test_roundtrip_empty():
     assert test_string == decoded_string
 
 
+def test_rejects_empty_special_token():
+    with pytest.raises(ValueError, match="empty strings"):
+        get_tokenizer_from_vocab_merges_path(
+            vocab_path=VOCAB_PATH,
+            merges_path=MERGES_PATH,
+            special_tokens=[""],
+        )
+
+
 def test_empty_matches_tiktoken():
     reference_tokenizer = tiktoken.get_encoding("gpt2")
     tokenizer = get_tokenizer_from_vocab_merges_path(
@@ -411,6 +420,42 @@ def test_encode_iterable_tinystories_matches_tiktoken():
 
     assert tokenizer.decode(all_ids) == corpus_contents
     assert reference_tokenizer.decode(reference_ids) == corpus_contents
+
+
+def test_encode_iterable_matches_encode_when_special_token_spans_chunks():
+    tokenizer = get_tokenizer_from_vocab_merges_path(
+        vocab_path=VOCAB_PATH,
+        merges_path=MERGES_PATH,
+        special_tokens=["<|endoftext|>"],
+    )
+    text = "hello<|endoftext|>world"
+    chunked = ["hello<|en", "doftext|>wo", "rld"]
+
+    assert list(tokenizer.encode_iterable(iter(chunked))) == tokenizer.encode(text)
+
+
+def test_encode_iterable_matches_encode_when_pretoken_spans_chunks():
+    tokenizer = get_tokenizer_from_vocab_merges_path(
+        vocab_path=VOCAB_PATH,
+        merges_path=MERGES_PATH,
+        special_tokens=["<|endoftext|>"],
+    )
+    text = "indivisible"
+    chunked = ["ind", "iv", "isible"]
+
+    assert list(tokenizer.encode_iterable(iter(chunked))) == tokenizer.encode(text)
+
+
+def test_encode_iterable_matches_encode_with_right_context_sensitive_whitespace():
+    tokenizer = get_tokenizer_from_vocab_merges_path(
+        vocab_path=VOCAB_PATH,
+        merges_path=MERGES_PATH,
+        special_tokens=["<|endoftext|>"],
+    )
+    text = "\n\n|"
+    chunked = ["\n", "\n|"]
+
+    assert list(tokenizer.encode_iterable(iter(chunked))) == tokenizer.encode(text)
 
 
 @pytest.mark.skipif(
