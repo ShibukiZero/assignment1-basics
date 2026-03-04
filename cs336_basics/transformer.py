@@ -91,3 +91,39 @@ class Embedding(nn.Module):
         # - input: (...)
         # - output: (..., embedding_dim)
         return self.weight[token_ids]
+
+
+class RMSNorm(nn.Module):
+    """RMSNorm layer used in Assignment 1, section 3.5.1."""
+
+    def __init__(
+        self,
+        d_model: int,
+        eps: float = 1e-5,
+        device: torch.device | None = None,
+        dtype: torch.dtype | None = None,
+    ) -> None:
+        super().__init__()
+        self.d_model = d_model
+        self.eps = eps
+        self.weight = nn.Parameter(torch.ones(d_model, device=device, dtype=dtype))
+
+    def forward(self, x: Tensor) -> Tensor:
+        """
+        Args:
+            x: Tensor of shape (..., d_model).
+
+        Returns:
+            Tensor of shape (..., d_model).
+        """
+        if x.shape[-1] != self.d_model:
+            raise ValueError(
+                f"Expected x.shape[-1] == {self.d_model}, got {x.shape[-1]}."
+            )
+
+        in_dtype = x.dtype
+        x_float = x.to(torch.float32)
+        mean_sq = x_float.square().mean(dim=-1, keepdim=True)
+        rms = torch.sqrt(mean_sq + self.eps)
+        normalized = (x_float / rms) * self.weight
+        return normalized.to(in_dtype)
