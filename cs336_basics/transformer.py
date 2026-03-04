@@ -3,7 +3,8 @@ from __future__ import annotations
 import math
 
 import torch
-from einops import einsum
+from einops import einsum, reduce
+from jaxtyping import Float
 from torch import Tensor, nn
 
 
@@ -123,7 +124,64 @@ class RMSNorm(nn.Module):
 
         in_dtype = x.dtype
         x_float = x.to(torch.float32)
-        mean_sq = x_float.square().mean(dim=-1, keepdim=True)
-        rms = torch.sqrt(mean_sq + self.eps)
-        normalized = (x_float / rms) * self.weight
+        mean_sq: Float[Tensor, "... 1"] = reduce(
+            x_float.square(),
+            "... d_model -> ... 1",
+            "mean",
+        )
+        rms: Float[Tensor, "... 1"] = torch.sqrt(mean_sq + self.eps)
+        normalized: Float[Tensor, "... d_model"] = (x_float / rms) * self.weight
         return normalized.to(in_dtype)
+
+
+def silu(in_features: Tensor) -> Tensor:
+    """
+    Elementwise SiLU activation.
+
+    Args:
+        in_features: Tensor of arbitrary shape.
+
+    Returns:
+        Tensor of the same shape.
+    """
+    return in_features * torch.sigmoid(in_features)
+
+
+class SwiGLU(nn.Module):
+    """Position-wise feed-forward layer from section 3.5.2."""
+
+    def __init__(
+        self,
+        d_model: int,
+        d_ff: int,
+        device: torch.device | None = None,
+        dtype: torch.dtype | None = None,
+    ) -> None:
+        super().__init__()
+        self.d_model = d_model
+        self.d_ff = d_ff
+
+        # FFN(x) = W2( SiLU(W1 x) * (W3 x) )
+        self.w1 = Linear(d_model, d_ff, device=device, dtype=dtype)
+        self.w2 = Linear(d_ff, d_model, device=device, dtype=dtype)
+        self.w3 = Linear(d_model, d_ff, device=device, dtype=dtype)
+
+    def forward(self, in_features: Tensor) -> Tensor:
+        """
+        Args:
+            in_features: Tensor of shape (..., d_model).
+
+        Returns:
+            Tensor of shape (..., d_model).
+        """
+        if in_features.shape[-1] != self.d_model:
+            raise ValueError(
+                f"Expected in_features.shape[-1] == {self.d_model}, got {in_features.shape[-1]}."
+            )
+
+        up: Float[Tensor, "... d_ff"] = self.w1(in_features)
+        gate: Float[Tensor, "... d_ff"] = self.w3(in_features)
+        activated: Float[Tensor, "... d_ff"] = silu(up)
+        gated: Float[Tensor, "... d_ff"] = activated * gate
+        output: Float[Tensor, "... d_model"] = self.w2(gated)
+        return output
