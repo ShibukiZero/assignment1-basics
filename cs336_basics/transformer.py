@@ -183,5 +183,5 @@ class SwiGLU(nn.Module):
         gate: Float[Tensor, "... d_ff"] = self.w3(in_features)
         activated: Float[Tensor, "... d_ff"] = silu(up)
         gated: Float[Tensor, "... d_ff"] = activated * gate
-        output: Float[Tensor, "... d_model"] = self.w2(gated)
-        return output
+        out_features: Float[Tensor, "... d_model"] = self.w2(gated)
+        return out_features
