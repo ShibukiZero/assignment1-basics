@@ -50,3 +50,44 @@ class Linear(nn.Module):
             self.weight,
             "... in_features, out_features in_features -> ... out_features",
         )
+
+
+class Embedding(nn.Module):
+    """Token embedding layer used in Assignment 1, section 3.4.3."""
+
+    def __init__(
+        self,
+        num_embeddings: int,
+        embedding_dim: int,
+        device: torch.device | None = None,
+        dtype: torch.dtype | None = None,
+    ) -> None:
+        super().__init__()
+        self.num_embeddings = num_embeddings
+        self.embedding_dim = embedding_dim
+
+        # Store embedding table with shape (vocab_size, d_model).
+        self.weight = nn.Parameter(
+            torch.empty(num_embeddings, embedding_dim, device=device, dtype=dtype)
+        )
+
+        # Init: N(0, 1), truncated to [-3, 3].
+        nn.init.trunc_normal_(self.weight, mean=0.0, std=1.0, a=-3.0, b=3.0)
+
+    def forward(self, token_ids: Tensor) -> Tensor:
+        """
+        Args:
+            token_ids: Tensor of shape (...) containing token IDs.
+
+        Returns:
+            Tensor of shape (..., embedding_dim).
+        """
+        if token_ids.dtype not in (torch.int32, torch.int64):
+            raise TypeError(
+                f"Expected token_ids dtype int32 or int64, got {token_ids.dtype}."
+            )
+
+        # Shape checkpoint:
+        # - input: (...)
+        # - output: (..., embedding_dim)
+        return self.weight[token_ids]
