@@ -3,8 +3,8 @@ from __future__ import annotations
 import math
 
 import torch
-from einops import einsum, reduce
-from jaxtyping import Float
+from einops import einsum, reduce, rearrange
+from jaxtyping import Float, Int
 from torch import Tensor, nn
 
 
@@ -185,3 +185,71 @@ class SwiGLU(nn.Module):
         gated: Float[Tensor, "... d_ff"] = activated * gate
         out_features: Float[Tensor, "... d_model"] = self.w2(gated)
         return out_features
+
+
+class RotaryPositionalEmbedding(nn.Module):
+    """RoPE module used in Assignment 1, section 3.5.3."""
+
+    def __init__(
+        self,
+        theta: float,
+        d_k: int,
+        max_seq_len: int,
+        device: torch.device | None = None,
+    ) -> None:
+        super().__init__()
+        if d_k % 2 != 0:
+            raise ValueError(f"Expected even d_k, got {d_k}.")
+
+        self.theta = theta
+        self.d_k = d_k
+        self.max_seq_len = max_seq_len
+        half_d_k = d_k // 2
+
+        i_seq: Int[Tensor, "max_seq_len"] = torch.arange(max_seq_len, device=device)
+        k_seq: Int[Tensor, "half_d_k"] = torch.arange(half_d_k, device=device)
+        theta_seq: Float[Tensor, "max_seq_len half_d_k"] = i_seq[:, None] / (
+            theta ** ((2 * k_seq[None, :]) / d_k)
+        )
+        self.register_buffer("cos_cached", torch.cos(theta_seq), persistent=False)
+        self.register_buffer("sin_cached", torch.sin(theta_seq), persistent=False)
+
+    def forward(
+        self,
+        in_query_or_key: Float[Tensor, "... sequence_length d_k"],
+        token_positions: Int[Tensor, "... sequence_length"],
+    ) -> Float[Tensor, "... sequence_length d_k"]:
+        """
+        Apply RoPE to query/key features.
+
+        Args:
+            in_query_or_key: Tensor of shape (..., sequence_length, d_k).
+            token_positions: Tensor of shape (..., sequence_length).
+
+        Returns:
+            Tensor of shape (..., sequence_length, d_k).
+        """
+        if in_query_or_key.shape[-1] != self.d_k:
+            raise ValueError(
+                f"Expected in_query_or_key.shape[-1] == {self.d_k}, got {in_query_or_key.shape[-1]}."
+            )
+        if token_positions.max() >= self.max_seq_len:
+            raise ValueError(
+                f"Expected token positions < {self.max_seq_len}, got max={token_positions.max().item()}."
+            )
+
+        in_dtype = in_query_or_key.dtype
+
+        cos_selected: Float[Tensor, "... sequence_length half_d_k"] = self.cos_cached[token_positions]
+        sin_selected: Float[Tensor, "... sequence_length half_d_k"] = self.sin_cached[token_positions]
+        x_pair = rearrange(in_query_or_key, "... seq_len (half two) -> ... seq_len half two", two=2)
+        x_even = x_pair[..., 0]
+        x_odd = x_pair[..., 1]
+        rot_even = x_even * cos_selected - x_odd * sin_selected
+        rot_odd = x_even * sin_selected + x_odd * cos_selected
+        rot_pair = torch.stack([rot_even, rot_odd], dim=-1)
+        out_features: Float[Tensor, "... sequence_length d_k"] = rearrange(
+            rot_pair,
+            "... seq_len half two -> ... seq_len (half two)",
+        )
+        return out_features.to(in_dtype)
