@@ -448,3 +448,90 @@ class CausalMultiHeadSelfAttention(nn.Module):
             merged_heads
         )
         return out_features.to(dtype=in_features.dtype)
+
+
+class TransformerBlock(nn.Module):
+    """Pre-norm Transformer block from sections 3.5 and 3.6."""
+
+    def __init__(
+        self,
+        d_model: int,
+        num_heads: int,
+        d_ff: int,
+        max_seq_len: int,
+        theta: float,
+        device: torch.device | None = None,
+        dtype: torch.dtype | None = None,
+    ) -> None:
+        super().__init__()
+        self.d_model = d_model
+        self.num_heads = num_heads
+        self.d_ff = d_ff
+        self.max_seq_len = max_seq_len
+        self.theta = theta
+
+        self.ln1 = RMSNorm(d_model, device=device, dtype=dtype)
+        self.attn = CausalMultiHeadSelfAttention(
+            d_model=d_model,
+            num_heads=num_heads,
+            max_seq_len=max_seq_len,
+            theta=theta,
+            device=device,
+            dtype=dtype,
+        )
+        self.ln2 = RMSNorm(d_model, device=device, dtype=dtype)
+        self.ffn = SwiGLU(
+            d_model=d_model,
+            d_ff=d_ff,
+            device=device,
+            dtype=dtype,
+        )
+
+    def forward(
+        self,
+        in_features: Float[Tensor, "batch_size sequence_length d_model"],
+        token_positions: Int[Tensor, "batch_size sequence_length"] | None = None,
+    ) -> Float[Tensor, "batch_size sequence_length d_model"]:
+        """
+        Args:
+            in_features: Tensor of shape (batch_size, sequence_length, d_model).
+            token_positions: Optional tensor of shape (batch_size, sequence_length).
+
+        Returns:
+            Tensor of shape (batch_size, sequence_length, d_model).
+        """
+        if in_features.shape[-1] != self.d_model:
+            raise ValueError(
+                f"Expected in_features.shape[-1] == {self.d_model}, got {in_features.shape[-1]}."
+            )
+        if token_positions is None:
+            token_positions = torch.arange(
+                in_features.shape[-2],
+                device=in_features.device,
+                dtype=torch.int64,
+            )
+            token_positions = rearrange(token_positions, "sequence_length -> 1 sequence_length")
+            token_positions = token_positions.expand(in_features.shape[0], -1)
+
+        normed_attn_in: Float[Tensor, "batch_size sequence_length d_model"] = self.ln1(
+            in_features
+        )
+        attn_out: Float[Tensor, "batch_size sequence_length d_model"] = self.attn(
+            normed_attn_in,
+            token_positions=token_positions,
+        )
+        residual_attn: Float[Tensor, "batch_size sequence_length d_model"] = (
+            in_features + attn_out
+        )
+        normed_ffn_in: Float[Tensor, "batch_size sequence_length d_model"] = self.ln2(
+            residual_attn
+        )
+        ffn_out: Float[Tensor, "batch_size sequence_length d_model"] = self.ffn(
+            normed_ffn_in
+        )
+        out_features: Float[Tensor, "batch_size sequence_length d_model"] = (
+            residual_attn + ffn_out
+        )
+        return out_features.to(dtype=in_features.dtype)
+
+
