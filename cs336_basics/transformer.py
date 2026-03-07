@@ -131,7 +131,7 @@ class RMSNorm(nn.Module):
         )
         rms: Float[Tensor, "... 1"] = torch.sqrt(mean_sq + self.eps)
         normalized: Float[Tensor, "... d_model"] = (x_float / rms) * self.weight
-        return normalized.to(in_dtype)
+        return normalized.to(dtype=in_dtype)
 
 
 def silu(in_features: Tensor) -> Tensor:
@@ -252,7 +252,7 @@ class RotaryPositionalEmbedding(nn.Module):
             rot_pair,
             "... seq_len half two -> ... seq_len (half two)",
         )
-        return out_features.to(in_dtype)
+        return out_features.to(dtype=in_dtype)
 
 
 def softmax(in_features: Float[Tensor, " ..."], dim: int) -> Float[Tensor, " ..."]:
@@ -318,10 +318,13 @@ def scaled_dot_product_attention(
         attention_logits: Float[Tensor, "batch_size ... queries keys"] = (
             attention_logits.masked_fill(~mask, -float("inf"))
         )
-    attention_weights: Float[Tensor, "batch_size ... queries keys"] = softmax(attention_logits, dim=-1)
+    attention_weights: Float[Tensor, "batch_size ... queries keys"] = softmax(
+        attention_logits,
+        dim=-1,
+    )
     out_features: Float[Tensor, "batch_size ... queries d_v"] = einsum(
         attention_weights,
         V,
         "batch_size ... queries keys, batch_size ... keys d_v -> batch_size ... queries d_v",
     )
-    return out_features.to(Q.dtype)
+    return out_features.to(dtype=Q.dtype)
