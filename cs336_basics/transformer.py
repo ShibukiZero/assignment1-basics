@@ -253,3 +253,22 @@ class RotaryPositionalEmbedding(nn.Module):
             "... seq_len half two -> ... seq_len (half two)",
         )
         return out_features.to(in_dtype)
+
+
+def softmax(in_features: Float[Tensor, " ..."], dim: int) -> Float[Tensor, " ..."]:
+    """
+    Numerically stable softmax over a chosen dimension.
+
+    Args:
+        in_features: Tensor of arbitrary shape.
+        dim: Dimension to normalize over.
+
+    Returns:
+        Tensor of the same shape with probabilities along `dim`.
+    """
+    max_vals: Float[Tensor, " ..."] = in_features.max(dim=dim, keepdim=True).values
+    shifted: Float[Tensor, " ..."] = in_features - max_vals
+    exp_vals: Float[Tensor, " ..."] = torch.exp(shifted)
+    out_features: Float[Tensor, " ..."] = exp_vals / exp_vals.sum(dim=dim, keepdim=True)
+
+    return out_features
