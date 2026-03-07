@@ -328,3 +328,123 @@ def scaled_dot_product_attention(
         "batch_size ... queries keys, batch_size ... keys d_v -> batch_size ... queries d_v",
     )
     return out_features.to(dtype=Q.dtype)
+
+
+class CausalMultiHeadSelfAttention(nn.Module):
+    """Causal multi-head self-attention from section 3.5.5."""
+
+    def __init__(
+        self,
+        d_model: int,
+        num_heads: int,
+        max_seq_len: int | None = None,
+        theta: float | None = None,
+        device: torch.device | None = None,
+        dtype: torch.dtype | None = None,
+    ) -> None:
+        super().__init__()
+        if d_model % num_heads != 0:
+            raise ValueError(
+                f"Expected d_model divisible by num_heads, got {d_model} and {num_heads}."
+            )
+
+        self.d_model = d_model
+        self.num_heads = num_heads
+        self.d_k = d_model // num_heads
+        self.max_seq_len = max_seq_len
+        self.theta = theta
+        self.use_rope = max_seq_len is not None and theta is not None
+
+        self.q_proj = Linear(d_model, d_model, device=device, dtype=dtype)
+        self.k_proj = Linear(d_model, d_model, device=device, dtype=dtype)
+        self.v_proj = Linear(d_model, d_model, device=device, dtype=dtype)
+        self.output_proj = Linear(d_model, d_model, device=device, dtype=dtype)
+        self.rope: RotaryPositionalEmbedding | None = None
+        if self.use_rope:
+            self.rope = RotaryPositionalEmbedding(
+                theta=theta,
+                d_k=self.d_k,
+                max_seq_len=max_seq_len,
+                device=device,
+            )
+
+    def forward(
+        self,
+        in_features: Float[Tensor, "batch_size ... sequence_length d_model"],
+        token_positions: Int[Tensor, "batch_size ... sequence_length"] | None = None,
+    ) -> Float[Tensor, "batch_size ... sequence_length d_model"]:
+        """
+        Args:
+            in_features: Tensor of shape (batch_size, ..., sequence_length, d_model).
+            token_positions: Optional tensor of shape (batch_size, ..., sequence_length).
+                Required when RoPE is enabled.
+
+        Returns:
+            Tensor of shape (batch_size, ..., sequence_length, d_model).
+        """
+        if in_features.shape[-1] != self.d_model:
+            raise ValueError(
+                f"Expected in_features.shape[-1] == {self.d_model}, got {in_features.shape[-1]}."
+            )
+        if self.use_rope:
+            if token_positions is None:
+                raise ValueError("Expected token_positions when RoPE is enabled.")
+            if token_positions.shape[-1] != in_features.shape[-2]:
+                raise ValueError(
+                    "Expected token_positions.shape[-1] == in_features.shape[-2], "
+                    f"got {token_positions.shape[-1]} and {in_features.shape[-2]}."
+                )
+
+        sequence_length = in_features.shape[-2]
+        q_proj: Float[Tensor, "batch_size ... sequence_length d_model"] = self.q_proj(
+            in_features
+        )
+        k_proj: Float[Tensor, "batch_size ... sequence_length d_model"] = self.k_proj(
+            in_features
+        )
+        v_proj: Float[Tensor, "batch_size ... sequence_length d_model"] = self.v_proj(
+            in_features
+        )
+        q_heads: Float[Tensor, "batch_size ... num_heads sequence_length d_k"] = rearrange(
+            q_proj,
+            "batch_size ... sequence_length (num_heads d_k) -> batch_size ... num_heads sequence_length d_k",
+            num_heads=self.num_heads,
+            d_k=self.d_k,
+        )
+        k_heads: Float[Tensor, "batch_size ... num_heads sequence_length d_k"] = rearrange(
+            k_proj,
+            "batch_size ... sequence_length (num_heads d_k) -> batch_size ... num_heads sequence_length d_k",
+            num_heads=self.num_heads,
+            d_k=self.d_k,
+        )
+        v_heads: Float[Tensor, "batch_size ... num_heads sequence_length d_k"] = rearrange(
+            v_proj,
+            "batch_size ... sequence_length (num_heads d_k) -> batch_size ... num_heads sequence_length d_k",
+            num_heads=self.num_heads,
+            d_k=self.d_k,
+        )
+        if self.use_rope:
+            q_heads = self.rope(q_heads, token_positions)
+            k_heads = self.rope(k_heads, token_positions)
+        causal_mask: Bool[Tensor, "sequence_length sequence_length"] = torch.tril(
+            torch.ones(
+                sequence_length,
+                sequence_length,
+                dtype=torch.bool,
+                device=in_features.device,
+            )
+        )
+        attn_out_heads: Float[Tensor, "batch_size ... num_heads sequence_length d_k"] = scaled_dot_product_attention(
+            q_heads,
+            k_heads,
+            v_heads,
+            causal_mask,
+        )
+        merged_heads: Float[Tensor, "batch_size ... sequence_length d_model"] = rearrange(
+            attn_out_heads,
+            "batch_size ... num_heads sequence_length d_k -> batch_size ... sequence_length (num_heads d_k)",
+        )
+        out_features: Float[Tensor, "batch_size ... sequence_length d_model"] = self.output_proj(
+            merged_heads
+        )
+        return out_features.to(dtype=in_features.dtype)
