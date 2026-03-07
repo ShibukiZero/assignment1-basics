@@ -535,3 +535,90 @@ class TransformerBlock(nn.Module):
         return out_features.to(dtype=in_features.dtype)
 
 
+class TransformerLM(nn.Module):
+    """Decoder-only Transformer language model from section 3.6."""
+
+    def __init__(
+        self,
+        vocab_size: int,
+        context_length: int,
+        d_model: int,
+        num_layers: int,
+        num_heads: int,
+        d_ff: int,
+        rope_theta: float,
+        device: torch.device | None = None,
+        dtype: torch.dtype | None = None,
+    ) -> None:
+        super().__init__()
+        self.vocab_size = vocab_size
+        self.context_length = context_length
+        self.d_model = d_model
+        self.num_layers = num_layers
+        self.num_heads = num_heads
+        self.d_ff = d_ff
+        self.rope_theta = rope_theta
+
+        self.token_embeddings = Embedding(
+            num_embeddings=vocab_size,
+            embedding_dim=d_model,
+            device=device,
+            dtype=dtype,
+        )
+        self.layers = nn.ModuleList(
+            [
+                TransformerBlock(
+                    d_model=d_model,
+                    num_heads=num_heads,
+                    d_ff=d_ff,
+                    max_seq_len=context_length,
+                    theta=rope_theta,
+                    device=device,
+                    dtype=dtype,
+                )
+                for _ in range(num_layers)
+            ]
+        )
+        self.ln_final = RMSNorm(d_model, device=device, dtype=dtype)
+        self.lm_head = Linear(d_model, vocab_size, device=device, dtype=dtype)
+
+    def forward(
+        self,
+        in_indices: Int[Tensor, "batch_size sequence_length"],
+    ) -> Float[Tensor, "batch_size sequence_length vocab_size"]:
+        """
+        Args:
+            in_indices: Tensor of shape (batch_size, sequence_length).
+
+        Returns:
+            Tensor of shape (batch_size, sequence_length, vocab_size).
+        """
+        if in_indices.shape[-1] > self.context_length:
+            raise ValueError(
+                f"Expected sequence length <= {self.context_length}, got {in_indices.shape[-1]}."
+            )
+
+        token_positions: Int[Tensor, "batch_size sequence_length"] = torch.arange(
+            in_indices.shape[-1],
+            device=in_indices.device,
+            dtype=torch.int64,
+        )
+        token_positions = rearrange(token_positions, "sequence_length -> 1 sequence_length")
+        token_positions = token_positions.expand(in_indices.shape[0], -1)
+
+        hidden_states: Float[Tensor, "batch_size sequence_length d_model"] = (
+            self.token_embeddings(in_indices)
+        )
+        for layer in self.layers:
+            hidden_states = layer(
+                hidden_states,
+                token_positions=token_positions,
+            )
+        final_hidden: Float[Tensor, "batch_size sequence_length d_model"] = self.ln_final(
+            hidden_states
+        )
+        logits: Float[Tensor, "batch_size sequence_length vocab_size"] = self.lm_head(
+            final_hidden
+        )
+
+        return logits
