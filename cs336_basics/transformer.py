@@ -4,7 +4,7 @@ import math
 
 import torch
 from einops import einsum, reduce, rearrange
-from jaxtyping import Float, Int
+from jaxtyping import Bool, Float, Int
 from torch import Tensor, nn
 
 
@@ -272,3 +272,56 @@ def softmax(in_features: Float[Tensor, " ..."], dim: int) -> Float[Tensor, " ...
     out_features: Float[Tensor, " ..."] = exp_vals / exp_vals.sum(dim=dim, keepdim=True)
 
     return out_features
+
+
+def scaled_dot_product_attention(
+    Q: Float[Tensor, "batch_size ... queries d_k"],
+    K: Float[Tensor, "batch_size ... keys d_k"],
+    V: Float[Tensor, "batch_size ... keys d_v"],
+    mask: Bool[Tensor, "batch_size ... queries keys"] | None = None,
+) -> Float[Tensor, "batch_size ... queries d_v"]:
+    """
+    Scaled dot-product attention from section 3.5.4.
+
+    Args:
+        Q: Query tensor of shape (batch_size, ..., queries, d_k).
+        K: Key tensor of shape (batch_size, ..., keys, d_k).
+        V: Value tensor of shape (batch_size, ..., keys, d_v).
+        mask: Optional bool mask of shape (batch_size, ..., queries, keys),
+            where True means "visible" and False means "masked out".
+
+    Returns:
+        Tensor of shape (batch_size, ..., queries, d_v).
+    """
+    if Q.shape[-1] != K.shape[-1]:
+        raise ValueError(
+            f"Expected Q and K to share d_k, got {Q.shape[-1]} and {K.shape[-1]}."
+        )
+    if K.shape[-2] != V.shape[-2]:
+        raise ValueError(
+            f"Expected K and V to share key length, got {K.shape[-2]} and {V.shape[-2]}."
+        )
+    if mask is not None and mask.shape[-2:] != (Q.shape[-2], K.shape[-2]):
+        raise ValueError(
+            "Expected mask.shape[-2:] == (queries, keys), "
+            f"got {mask.shape[-2:]} vs {(Q.shape[-2], K.shape[-2])}."
+        )
+
+    scale: float = math.sqrt(Q.shape[-1])
+    attention_logits: Float[Tensor, "batch_size ... queries keys"] = einsum(
+        Q,
+        K,
+        "batch_size ... queries d_k, batch_size ... keys d_k -> batch_size ... queries keys",
+    )
+    attention_logits: Float[Tensor, "batch_size ... queries keys"] = attention_logits / scale
+    if mask is not None:
+        attention_logits: Float[Tensor, "batch_size ... queries keys"] = (
+            attention_logits.masked_fill(~mask, -float("inf"))
+        )
+    attention_weights: Float[Tensor, "batch_size ... queries keys"] = softmax(attention_logits, dim=-1)
+    out_features: Float[Tensor, "batch_size ... queries d_v"] = einsum(
+        attention_weights,
+        V,
+        "batch_size ... queries keys, batch_size ... keys d_v -> batch_size ... queries d_v",
+    )
+    return out_features.to(Q.dtype)
