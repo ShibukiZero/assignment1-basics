@@ -183,6 +183,15 @@ def evaluate_loss(
 
 def main() -> None:
     args = parse_args()
+    if args.eval_interval <= 0:
+        raise ValueError(f"Expected eval_interval > 0, got {args.eval_interval}.")
+    if args.checkpoint_interval <= 0:
+        raise ValueError(
+            f"Expected checkpoint_interval > 0, got {args.checkpoint_interval}."
+        )
+    if args.eval_batches <= 0:
+        raise ValueError(f"Expected eval_batches > 0, got {args.eval_batches}.")
+
     args.output_dir.mkdir(parents=True, exist_ok=True)
 
     train_tokens = load_token_array(args.train_npy)
