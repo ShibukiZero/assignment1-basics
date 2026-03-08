@@ -248,6 +248,7 @@ def main() -> None:
         loss.backward()
         gradient_clipping(model.parameters(), args.grad_clip)
         optimizer.step()
+        completed_steps = step + 1
 
         if step % args.eval_interval == 0:
             train_metrics = evaluate_loss(
@@ -257,7 +258,7 @@ def main() -> None:
                 context_length=args.context_length,
                 device=args.device,
                 num_batches=args.eval_batches,
-                step=step,
+                step=completed_steps,
                 split="train",
             )
 
@@ -268,7 +269,7 @@ def main() -> None:
                 context_length=args.context_length,
                 device=args.device,
                 num_batches=args.eval_batches,
-                step=step,
+                step=completed_steps,
                 split="val",
             )
 
@@ -278,8 +279,6 @@ def main() -> None:
                     f"step={metrics.step} split={metrics.split} "
                     f"loss={metrics.loss:.6f} perplexity={metrics.perplexity:.6f}"
                 )
-
-        completed_steps = step + 1
 
         if completed_steps % args.checkpoint_interval == 0:
             save_training_checkpoint(
