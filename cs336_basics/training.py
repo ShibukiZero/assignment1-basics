@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from collections.abc import Iterable
 
+import numpy as np
 import torch
 from einops import reduce
 from jaxtyping import Float, Int
@@ -108,3 +109,47 @@ def gradient_clipping(
     clip_coef: Float[Tensor, ""] = max_l2_norm / (total_norm + eps)
     for grad in grads:
         grad.mul_(clip_coef)
+
+
+def get_batch(
+    dataset: np.ndarray,
+    batch_size: int,
+    context_length: int,
+    device: str,
+) -> tuple[Int[Tensor, "batch_size context_length"], Int[Tensor, "batch_size context_length"]]:
+    """
+    Sample a batch of next-token-prediction training examples from a 1D token stream.
+
+    Contract:
+    - `dataset` is a 1D numpy integer array (or array-like such as `np.memmap`)
+    - sample `batch_size` random starting positions
+    - for each start `s`:
+      - `x = dataset[s : s + context_length]`
+      - `y = dataset[s + 1 : s + 1 + context_length]`
+    - return both tensors on the requested device
+
+    Performance note:
+    - This interface is compatible with `np.memmap`, so the later training pipeline
+      can use memory-mapped token arrays without changing the batching API.
+    """
+    if dataset.ndim != 1:
+        raise ValueError(f"Expected a 1D dataset, got shape {dataset.shape}.")
+    if batch_size <= 0:
+        raise ValueError(f"Expected batch_size > 0, got {batch_size}.")
+    if context_length <= 0:
+        raise ValueError(f"Expected context_length > 0, got {context_length}.")
+    if len(dataset) <= context_length:
+        raise ValueError(
+            "Expected len(dataset) > context_length so labels can be shifted by one, "
+            f"got len(dataset)={len(dataset)}, context_length={context_length}."
+        )
+
+    num_possible_starts = len(dataset) - context_length
+    start_indices = np.random.randint(num_possible_starts, size=batch_size)
+
+    x_np = np.stack([dataset[s : s + context_length] for s in start_indices])
+    y_np = np.stack([dataset[s + 1 : s + 1 + context_length] for s in start_indices])
+
+    x = torch.tensor(x_np, device=device, dtype=torch.long)
+    y = torch.tensor(y_np, device=device, dtype=torch.long)
+    return x, y
