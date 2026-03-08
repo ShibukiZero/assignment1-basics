@@ -124,6 +124,21 @@ def flatten_lm_batch(
     return flat_logits, flat_targets
 
 
+def save_training_checkpoint(
+    *,
+    model: TransformerLM,
+    optimizer: AdamW,
+    iteration: int,
+    output_path: Path,
+) -> None:
+    save_checkpoint(
+        model=model,
+        optimizer=optimizer,
+        iteration=iteration,
+        out=output_path,
+    )
+
+
 def evaluate_loss(
     *,
     model: TransformerLM,
@@ -261,12 +276,21 @@ def main() -> None:
                 )
 
         if step > start_step and step % args.checkpoint_interval == 0:
-            save_checkpoint(
+            save_training_checkpoint(
                 model=model,
                 optimizer=optimizer,
                 iteration=step,
-                out=latest_checkpoint,
+                output_path=latest_checkpoint,
             )
+
+    final_iteration = args.max_steps - 1
+    if final_iteration >= start_step:
+        save_training_checkpoint(
+            model=model,
+            optimizer=optimizer,
+            iteration=final_iteration,
+            output_path=latest_checkpoint,
+        )
 
 
 if __name__ == "__main__":

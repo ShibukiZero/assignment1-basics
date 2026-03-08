@@ -114,7 +114,8 @@ class AdamW(torch.optim.Optimizer):
 
                 alpha_t = lr * math.sqrt(1 - beta2**t) / (1 - beta1**t)
 
-                p.data -= alpha_t * m / (torch.sqrt(v) + eps)
+                # Apply decoupled weight decay to the pre-update parameters.
                 p.data -= lr * weight_decay * p.data
+                p.data -= alpha_t * m / (torch.sqrt(v) + eps)
 
         return loss
