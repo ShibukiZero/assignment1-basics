@@ -91,11 +91,10 @@ def parse_args() -> argparse.Namespace:
 def resolve_dtype(raw: str) -> torch.dtype:
     if raw == "float32":
         return torch.float32
-    if raw == "bfloat16":
-        return torch.bfloat16
-    if raw == "float16":
-        return torch.float16
-    raise ValueError(f"Unsupported dtype: {raw}")
+    raise ValueError(
+        "Only float32 training is supported in this assignment script; "
+        f"got dtype={raw}."
+    )
 
 
 def load_token_array(path: Path) -> np.ndarray:
