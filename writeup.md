@@ -135,30 +135,74 @@ Using the OpenWebText tokenizer (32K) on a 50MB OpenWebText validation slice, me
 **Deliverable:** A one-to-two sentence response.
 
 **Answer:**
+For this assignment's `TransformerLM` implementation, the GPT-2 XL configuration has `2,127,057,600` trainable parameters (about `2.13B`). Assuming float32 parameters (`4` bytes per parameter), loading the parameters alone requires `8,508,230,400` bytes of memory, which is about `8.51 GB` (approximately `7.92 GiB`).
+These values are checked by `artifacts/experiments/transformer_accounting/verify_gpt2_xl_accounting.py`.
 
 ### (b)
 **Question:** Identify the matrix multiplies required for one forward pass of the GPT-2 XL-shaped model. How many FLOPs do they require in total (sequence length = `context_length`)?  
 **Deliverable:** A list of matrix multiplies (with descriptions), and total FLOPs.
 
 **Answer:**
+Assuming a single input sequence of length `T = 1024`, with `L = 48`, `D = 1600`, `H = 25`, `d_k = D / H = 64`, `d_ff = 6400`, and `V = 50257`, the matrix multiplies in one forward pass are:
+
+- Per layer attention projections:
+  - `X @ W_Q`: `2 * T * D * D = 2 * 1024 * 1600 * 1600 = 5,242,880,000`
+  - `X @ W_K`: `5,242,880,000`
+  - `X @ W_V`: `5,242,880,000`
+  - `concat(heads) @ W_O`: `5,242,880,000`
+- Per layer attention score/value products:
+  - `Q @ K^T`: `2 * H * T * d_k * T = 2 * 25 * 1024 * 64 * 1024 = 3,355,443,200`
+  - `A @ V`: `3,355,443,200`
+- Per layer FFN:
+  - `X @ W_1`: `2 * T * D * d_ff = 2 * 1024 * 1600 * 6400 = 20,971,520,000`
+  - `X @ W_3`: `20,971,520,000`
+  - `gate @ W_2`: `2 * T * d_ff * D = 20,971,520,000`
+
+This gives `90,596,966,400` FLOPs per Transformer layer, so the `48` blocks require `4,348,654,387,200` FLOPs in total. The final language-model head adds `2 * T * D * V = 2 * 1024 * 1600 * 50257 = 164,682,137,600` FLOPs, giving a total of `4,513,336,524,800` FLOPs for one forward pass. These values are checked by `artifacts/experiments/transformer_accounting/verify_gpt2_xl_accounting.py`.
 
 ### (c)
 **Question:** Based on your analysis, which parts of the model require the most FLOPs?  
 **Deliverable:** A one-to-two sentence response.
 
 **Answer:**
+The feed-forward network dominates the FLOPs in this GPT-2 XL configuration, accounting for about `66.9%` of the total forward-pass FLOPs. The next largest contributor is the attention projection layers (`Q/K/V/O`) at about `22.3%`, while the attention score product (`QK^T`), attention value product (`A @ V`), and final `lm_head` each contribute only a few percent.
 
 ### (d)
 **Question:** Repeat analysis for GPT-2 small (12L, 768d, 12H), medium (24L, 1024d, 16H), and large (36L, 1280d, 20H). As model size increases, which components take proportionally more or less FLOPs?  
 **Deliverable:** For each model, provide component-wise FLOP breakdown (proportion of total), plus a one-to-two sentence summary.
 
 **Answer:**
+Using the same matrix-multiply accounting as in part (b), the forward-pass FLOP breakdowns are:
+
+- **GPT-2 small**
+  - attention projections: `57,982,058,496` FLOPs (`16.58%`)
+  - attention scores (`QK^T`): `19,327,352,832` FLOPs (`5.53%`)
+  - attention values (`A @ V`): `19,327,352,832` FLOPs (`5.53%`)
+  - FFN: `173,946,175,488` FLOPs (`49.75%`)
+  - `lm_head`: `79,047,426,048` FLOPs (`22.61%`)
+
+- **GPT-2 medium**
+  - attention projections: `206,158,430,208` FLOPs (`19.96%`)
+  - attention scores (`QK^T`): `51,539,607,552` FLOPs (`4.99%`)
+  - attention values (`A @ V`): `51,539,607,552` FLOPs (`4.99%`)
+  - FFN: `618,475,290,624` FLOPs (`59.87%`)
+  - `lm_head`: `105,396,568,064` FLOPs (`10.20%`)
+
+- **GPT-2 large**
+  - attention projections: `483,183,820,800` FLOPs (`21.40%`)
+  - attention scores (`QK^T`): `96,636,764,160` FLOPs (`4.28%`)
+  - attention values (`A @ V`): `96,636,764,160` FLOPs (`4.28%`)
+  - FFN: `1,449,551,462,400` FLOPs (`64.20%`)
+  - `lm_head`: `131,745,710,080` FLOPs (`5.84%`)
+
+As model size increases at fixed context length, the `O(T * d_model^2)` terms, especially the FFN and attention projection layers, take up a larger fraction of the total FLOPs. In contrast, the attention matrix products (`QK^T` and `A @ V`) and the final `lm_head` become proportionally smaller.
 
 ### (e)
 **Question:** For GPT-2 XL, increase context length to 16,384. How do total forward FLOPs and relative component contributions change?  
 **Deliverable:** A one-to-two sentence response.
 
 **Answer:**
+For GPT-2 XL, increasing the context length from `1024` to `16,384` raises the total forward-pass FLOPs from `4,513,336,524,800` to `149,522,795,724,800`, which is about a `33.1x` increase. At this longer context, the attention matrix products become much more important: `QK^T` and `A @ V` together grow from about `7.14%` to about `55.15%` of total FLOPs, while the FFN, attention projections, and `lm_head` all become proportionally less dominant.
 
 ---
 
