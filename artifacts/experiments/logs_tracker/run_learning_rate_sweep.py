@@ -76,9 +76,19 @@ def parse_args() -> argparse.Namespace:
         type=Path,
         default=Path("/root/tf-logs"),
     )
+    parser.add_argument(
+        "--enable-tensorboard",
+        action="store_true",
+        help="Write TensorBoard event files for sweep runs.",
+    )
     parser.add_argument("--device", type=str, default="cuda:0")
     parser.add_argument("--dtype", type=str, default="float32")
     parser.add_argument("--seed", type=int, default=42)
+    parser.add_argument(
+        "--disable-checkpoints",
+        action="store_true",
+        help="Skip writing best/latest checkpoint files during sweep runs.",
+    )
 
     parser.add_argument("--vocab-size", type=int, default=10000)
     parser.add_argument("--context-length", type=int, default=256)
@@ -155,6 +165,7 @@ def build_command(args: argparse.Namespace, *, learning_rate: float) -> list[str
         str(log_dir),
         "--tensorboard-root",
         str(args.tensorboard_root),
+        "--enable-tensorboard" if args.enable_tensorboard else "",
         "--run-name",
         run_name,
         "--device",
@@ -187,6 +198,7 @@ def build_command(args: argparse.Namespace, *, learning_rate: float) -> list[str
         str(args.eval_batches),
         "--checkpoint-interval",
         str(args.checkpoint_interval),
+        "--disable-checkpoints" if args.disable_checkpoints else "",
         "--learning-rate",
         str(learning_rate),
         "--min-learning-rate",
@@ -208,7 +220,7 @@ def build_command(args: argparse.Namespace, *, learning_rate: float) -> list[str
 
 
 def shell_quote(parts: list[str]) -> str:
-    return " ".join(shlex.quote(part) for part in parts)
+    return " ".join(shlex.quote(part) for part in parts if part)
 
 
 def main() -> None:
@@ -227,8 +239,9 @@ def main() -> None:
         return
 
     for index, command in enumerate(commands, start=1):
-        print(f"[{index}/{len(commands)}] {' '.join(command)}")
-        subprocess.run(command, check=True)
+        normalized = [part for part in command if part]
+        print(f"[{index}/{len(commands)}] {' '.join(normalized)}")
+        subprocess.run(normalized, check=True)
 
 
 if __name__ == "__main__":

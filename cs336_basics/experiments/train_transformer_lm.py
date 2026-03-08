@@ -85,7 +85,7 @@ class RunSummary:
     total_wallclock_seconds: float
     best_val_loss: float | None
     best_val_step: int | None
-    latest_checkpoint: str
+    latest_checkpoint: str | None
     best_checkpoint: str | None
 
 
@@ -101,7 +101,17 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--log-dir", type=Path, default=None)
     parser.add_argument("--run-name", type=str, default=None)
     parser.add_argument("--tensorboard-root", type=Path, default=Path("/root/tf-logs"))
-    parser.add_argument("--disable-tensorboard", action="store_true")
+    tensorboard_group = parser.add_mutually_exclusive_group()
+    tensorboard_group.add_argument(
+        "--enable-tensorboard",
+        action="store_true",
+        help="Write TensorBoard event files for this run.",
+    )
+    tensorboard_group.add_argument(
+        "--disable-tensorboard",
+        action="store_true",
+        help=argparse.SUPPRESS,
+    )
     parser.add_argument("--seed", type=int, default=42)
 
     parser.add_argument("--vocab-size", type=int, required=True)
@@ -117,6 +127,11 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--eval-interval", type=int, default=100)
     parser.add_argument("--eval-batches", type=int, default=10)
     parser.add_argument("--checkpoint-interval", type=int, default=500)
+    parser.add_argument(
+        "--disable-checkpoints",
+        action="store_true",
+        help="Do not write best/latest checkpoint files.",
+    )
 
     parser.add_argument("--learning-rate", type=float, default=3e-4)
     parser.add_argument("--min-learning-rate", type=float, default=3e-5)
@@ -166,10 +181,10 @@ def write_json(path: Path, payload: dict) -> None:
 def maybe_make_summary_writer(
     *,
     tensorboard_dir: Path,
-    disable_tensorboard: bool,
+    enable_tensorboard: bool,
 ) -> SummaryWriter | None:
-    if disable_tensorboard:
-        print("tensorboard=disabled_by_flag")
+    if not enable_tensorboard:
+        print("tensorboard=disabled_by_default")
         return None
     if SummaryWriter is None:
         print(
@@ -242,6 +257,7 @@ def make_run_config(
             "eval_interval": args.eval_interval,
             "eval_batches": args.eval_batches,
             "checkpoint_interval": args.checkpoint_interval,
+            "disable_checkpoints": args.disable_checkpoints,
             "learning_rate": args.learning_rate,
             "min_learning_rate": args.min_learning_rate,
             "warmup_iters": args.warmup_iters,
@@ -338,7 +354,7 @@ def main() -> None:
     args = parse_args()
     if args.eval_interval <= 0:
         raise ValueError(f"Expected eval_interval > 0, got {args.eval_interval}.")
-    if args.checkpoint_interval <= 0:
+    if args.checkpoint_interval <= 0 and not args.disable_checkpoints:
         raise ValueError(
             f"Expected checkpoint_interval > 0, got {args.checkpoint_interval}."
         )
@@ -393,7 +409,7 @@ def main() -> None:
     best_checkpoint = args.output_dir / "best_checkpoint.pt"
     writer = maybe_make_summary_writer(
         tensorboard_dir=tensorboard_dir,
-        disable_tensorboard=args.disable_tensorboard,
+        enable_tensorboard=args.enable_tensorboard and not args.disable_tensorboard,
     )
     write_json(
         config_path,
@@ -537,14 +553,18 @@ def main() -> None:
             if best_val_loss is None or val_metrics.loss < best_val_loss:
                 best_val_loss = val_metrics.loss
                 best_val_step = val_metrics.step
-                save_training_checkpoint(
-                    model=model,
-                    optimizer=optimizer,
-                    iteration=completed_steps,
-                    output_path=best_checkpoint,
-                )
+                if not args.disable_checkpoints:
+                    save_training_checkpoint(
+                        model=model,
+                        optimizer=optimizer,
+                        iteration=completed_steps,
+                        output_path=best_checkpoint,
+                    )
 
-        if completed_steps % args.checkpoint_interval == 0:
+        if (
+            not args.disable_checkpoints
+            and completed_steps % args.checkpoint_interval == 0
+        ):
             save_training_checkpoint(
                 model=model,
                 optimizer=optimizer,
@@ -553,7 +573,7 @@ def main() -> None:
             )
 
     final_iteration = args.max_steps
-    if final_iteration > start_step:
+    if final_iteration > start_step and not args.disable_checkpoints:
         save_training_checkpoint(
             model=model,
             optimizer=optimizer,
@@ -571,8 +591,14 @@ def main() -> None:
                 total_wallclock_seconds=total_wallclock_seconds,
                 best_val_loss=best_val_loss,
                 best_val_step=best_val_step,
-                latest_checkpoint=str(latest_checkpoint),
-                best_checkpoint=str(best_checkpoint) if best_val_loss is not None else None,
+                latest_checkpoint=(
+                    str(latest_checkpoint) if not args.disable_checkpoints else None
+                ),
+                best_checkpoint=(
+                    str(best_checkpoint)
+                    if best_val_loss is not None and not args.disable_checkpoints
+                    else None
+                ),
             )
         ),
     )
