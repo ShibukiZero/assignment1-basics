@@ -259,7 +259,7 @@ def main() -> None:
         optimizer.step()
         completed_steps = step + 1
 
-        if step % args.eval_interval == 0:
+        if completed_steps % args.eval_interval == 0:
             train_metrics = evaluate_loss(
                 model=model,
                 dataset=train_tokens,
