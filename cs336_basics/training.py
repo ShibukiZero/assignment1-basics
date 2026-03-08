@@ -199,6 +199,12 @@ def load_checkpoint(
     3. `optimizer.load_state_dict(checkpoint["optimizer"])`
     4. return `checkpoint["iteration"]`
     """
+    if map_location is None:
+        model_tensor = next(model.parameters(), None)
+        if model_tensor is None:
+            model_tensor = next(model.buffers(), None)
+        map_location = model_tensor.device if model_tensor is not None else torch.device("cpu")
+
     checkpoint = torch.load(src, map_location=map_location)
     model.load_state_dict(checkpoint["model"])
     optimizer.load_state_dict(checkpoint["optimizer"])

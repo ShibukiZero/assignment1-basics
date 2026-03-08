@@ -311,6 +311,7 @@ def main() -> None:
         checkpoint_path,
         model=restored_model,
         optimizer=restored_optimizer,
+        map_location=torch.device(args.device),
     )
 
     prompt_tokens = torch.tensor(
