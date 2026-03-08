@@ -6,6 +6,50 @@ import math
 import torch
 
 
+def lr_cosine_schedule(
+    it: int,
+    max_learning_rate: float,
+    min_learning_rate: float,
+    warmup_iters: int,
+    cosine_cycle_iters: int,
+) -> float:
+    """
+    Cosine learning-rate schedule with linear warmup.
+
+    Expected behavior:
+    - if `it < warmup_iters`, linearly warm up from `0` to `max_learning_rate`
+    - if `warmup_iters <= it <= cosine_cycle_iters`, cosine-decay from
+      `max_learning_rate` to `min_learning_rate`
+    - if `it > cosine_cycle_iters`, stay at `min_learning_rate`
+
+    Key checkpoints:
+    - at `it = 0`, the warmup branch should return `0`
+    - at `it = warmup_iters`, the cosine branch should return `max_learning_rate`
+    - at `it = cosine_cycle_iters`, the cosine branch should return `min_learning_rate`
+    """
+    if warmup_iters < 0:
+        raise ValueError(f"Expected warmup_iters >= 0, got {warmup_iters}.")
+    if cosine_cycle_iters < warmup_iters:
+        raise ValueError(
+            "Expected cosine_cycle_iters >= warmup_iters, "
+            f"got cosine_cycle_iters={cosine_cycle_iters}, warmup_iters={warmup_iters}."
+        )
+
+    if it < warmup_iters:
+        return (it / warmup_iters) * max_learning_rate
+
+    if it <= cosine_cycle_iters:
+        if cosine_cycle_iters == warmup_iters:
+            return max_learning_rate
+
+        progress = (it - warmup_iters) / (cosine_cycle_iters - warmup_iters)
+        return min_learning_rate + 0.5 * (1 + math.cos(math.pi * progress)) * (
+            max_learning_rate - min_learning_rate
+        )
+
+    return min_learning_rate
+
+
 class AdamW(torch.optim.Optimizer):
     """AdamW optimizer for Assignment 1."""
 
