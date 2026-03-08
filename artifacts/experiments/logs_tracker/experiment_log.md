@@ -36,6 +36,38 @@ Conventions:
 
 ## Runs
 
+### `tinystories_lr_sweep_b_pilot`
+- Logged at (local): `2026-03-08 18:45:01 CST`
+- Run timestamp (from logs/config): `2026-03-08T10:43:33.432752+00:00`
+- Status: `PASS`
+- Purpose: First TinyStories LR-sweep pilot run to verify the 7.2 baseline configuration on H800 and check whether the baseline training pipeline remains stable at larger model scale.
+- Dataset: TinyStories token IDs (`tiny_train_ids.npy`, `tiny_valid_ids.npy`)
+- Model summary: TinyStories baseline architecture with `vocab_size=10000`, `context_length=256`, `d_model=512`, `num_layers=4`, `num_heads=16`, `d_ff=1344`, `rope_theta=10000`
+- Optimization summary: `batch_size=32`, `max_steps=20`, `eval_interval=5`, `eval_batches=4`, `learning_rate=3e-4`, `min_learning_rate=3e-5`, `warmup_iters=200`, `cosine_cycle_iters=40000`, `betas=(0.9, 0.999)`, `eps=1e-8`, `weight_decay=0.1`
+- Large-artifact path: `/root/autodl-tmp/training_runs/tinystories_lr_sweep_b_pilot`
+- Lightweight-log path: `.agents/logs/tinystories_lr_sweep_b_pilot`
+- TensorBoard path: `/root/tf-logs/tinystories_lr_sweep_b_pilot`
+- Key metrics:
+  - best validation loss: `8.925974` at step `20`
+  - final step: `20`
+  - total wallclock: `5.860483s`
+  - observed validation losses:
+    - step 5: `9.234610`
+    - step 10: `9.176618`
+    - step 15: `9.072989`
+    - step 20: `8.925974`
+- Main observations:
+  - The baseline-scale model runs successfully on the current H800 environment without immediate instability.
+  - Validation loss decreases monotonically over the first 20 steps, so there is no evidence of divergence at this setting.
+  - This run is still primarily a pipeline/pilot check, not a conclusive LR comparison:
+    - with `warmup_iters=200`, the effective LR only reached `2.85e-05` by step 20
+    - so the nominal target LR `3e-4` has not actually been exercised yet
+  - The wallclock signal looks reasonable for a baseline-scale smoke test:
+    - about `3.97s` to reach step 20 eval
+    - about `5.86s` total wallclock
+- Decision: Keep this configuration as a valid baseline-scale pilot, but do not use it yet to rank LR choices.
+- Next action: Run the same pilot template for the other LR points, then either reduce warmup for pilot sweeps or run longer pilots so the configured LR is actually reached.
+
 ### `ch7_logging_smoke`
 - Logged at (local): `2026-03-08 18:27:59 CST`
 - Run timestamp (from logs/config): `2026-03-08T10:22:13.691775+00:00`
