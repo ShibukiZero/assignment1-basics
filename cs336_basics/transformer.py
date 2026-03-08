@@ -245,6 +245,13 @@ class RotaryPositionalEmbedding(nn.Module):
         x_pair = rearrange(in_query_or_key, "... seq_len (half two) -> ... seq_len half two", two=2)
         x_even = x_pair[..., 0]
         x_odd = x_pair[..., 1]
+
+        # Align cached RoPE factors with any extra dimensions in query/key
+        # (e.g., num_heads) by inserting singleton axes before sequence_length.
+        while cos_selected.ndim < x_even.ndim:
+            cos_selected = cos_selected.unsqueeze(-3)
+            sin_selected = sin_selected.unsqueeze(-3)
+
         rot_even = x_even * cos_selected - x_odd * sin_selected
         rot_odd = x_even * sin_selected + x_odd * cos_selected
         rot_pair = torch.stack([rot_even, rot_odd], dim=-1)
