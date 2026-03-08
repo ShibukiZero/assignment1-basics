@@ -7,6 +7,8 @@ from pathlib import Path
 
 import numpy as np
 import torch
+from jaxtyping import Float, Int
+from torch import Tensor
 
 # Support both:
 # 1) `python -m cs336_basics.experiments.train_transformer_lm`
@@ -112,6 +114,16 @@ def append_jsonl(path: Path, row: dict) -> None:
         f.write(json.dumps(row) + "\n")
 
 
+def flatten_lm_batch(
+    logits: Float[Tensor, "batch_size sequence_length vocab_size"],
+    targets: Int[Tensor, "batch_size sequence_length"],
+) -> tuple[Float[Tensor, "batch_size_times_sequence_length vocab_size"], Int[Tensor, "batch_size_times_sequence_length"]]:
+    """Flatten `(B, T, V)` logits and `(B, T)` targets into cross-entropy inputs."""
+    flat_logits = logits.reshape(-1, logits.shape[-1])
+    flat_targets = targets.reshape(-1)
+    return flat_logits, flat_targets
+
+
 def evaluate_loss(
     *,
     model: TransformerLM,
@@ -120,12 +132,14 @@ def evaluate_loss(
     context_length: int,
     device: str,
     num_batches: int,
+    step: int,
+    split: str,
 ) -> EvalMetrics:
     """Evaluate average loss / perplexity on a split."""
     was_training = model.training
     model.eval()
     loss_values: list[float] = []
-    with torch.no_grad():
+    with torch.inference_mode():
         for _ in range(num_batches):
             x, y = get_batch(
                 dataset=dataset,
@@ -134,8 +148,7 @@ def evaluate_loss(
                 device=device,
             )
             logits = model(x)
-            flat_logits = logits.reshape(-1, logits.shape[-1])
-            flat_targets = y.reshape(-1)
+            flat_logits, flat_targets = flatten_lm_batch(logits, y)
             loss = cross_entropy(flat_logits, flat_targets)
             loss_values.append(float(loss.detach().cpu().item()))
 
@@ -147,8 +160,8 @@ def evaluate_loss(
         model.train()
 
     return EvalMetrics(
-        step=0,
-        split="",
+        step=step,
+        split=split,
         loss=avg_loss,
         perplexity=ppl,
     )
@@ -209,8 +222,7 @@ def main() -> None:
 
         logits = model(x)
 
-        flat_logits = logits.reshape(-1, logits.shape[-1])
-        flat_targets = y.reshape(-1)
+        flat_logits, flat_targets = flatten_lm_batch(logits, y)
 
         loss = cross_entropy(flat_logits, flat_targets)
 
@@ -226,9 +238,9 @@ def main() -> None:
                 context_length=args.context_length,
                 device=args.device,
                 num_batches=args.eval_batches,
+                step=step,
+                split="train",
             )
-            train_metrics.step = step
-            train_metrics.split = "train"
 
             val_metrics = evaluate_loss(
                 model=model,
@@ -237,9 +249,9 @@ def main() -> None:
                 context_length=args.context_length,
                 device=args.device,
                 num_batches=args.eval_batches,
+                step=step,
+                split="val",
             )
-            val_metrics.step = step
-            val_metrics.split = "val"
 
             for metrics in (train_metrics, val_metrics):
                 append_jsonl(metrics_path, asdict(metrics))
