@@ -359,7 +359,14 @@ Using the forward-pass result from `transformer_accounting`, GPT-2 XL requires `
 
 **Writeup content (summary of experiment log):**
 
+I added lightweight experiment tracking to the TinyStories training script so that every run writes `config.json`, `metrics.jsonl`, `summary.json`, and `diagnostics.jsonl`, while TensorBoard event files are written under `/root/tf-logs/<run_name>`. Each logged metric record includes at least `step`, `wallclock_seconds`, `split`, `loss`, `perplexity`, and the optimization metadata needed to reconstruct curves; this supports plotting both loss-versus-step and loss-versus-wallclock-time, as requested by the handout.
+
 **Links/paths to logs and curves:**
+
+- Durable experiment ledger: `artifacts/experiments/logs_tracker/experiment_log.md`
+- Phase summary: `artifacts/experiments/logs_tracker/phase_summary.md`
+- Representative LR-sweep figures: `artifacts/experiments/logs_tracker/figures_learning_rate_a/`
+- High-LR/failure-side figures: `artifacts/experiments/logs_tracker/figures_learning_rate_b/`
 
 ---
 
@@ -372,12 +379,36 @@ Using the forward-pass result from `transformer_accounting`, GPT-2 XL requires `
 
 **Answer:**
 
+We tuned the TinyStories baseline model (`vocab_size=10000`, `context_length=256`, `d_model=512`, `d_ff=1344`, `num_layers=4`, `num_heads=16`, `rope_theta=10000`) with a staged search strategy. We first ran short 60-step pilot sweeps with `warmup_iters=20` to identify a good learning-rate region, then used longer confirmation runs to break ties, and finally trained the best setting for 25,000 steps. The representative pilot results were:
+
+- `1e-4`: best validation loss `5.9340`
+- `3e-4`: best validation loss `4.3626`
+- `1e-3`: best validation loss `3.7093`
+- `2e-3`: best validation loss `3.6406`
+- `2e-2`: best validation loss `4.3934`
+- `2e-1`: best validation loss `6.7279`
+- `5e-1`: best validation loss `25.7417` (failure-side run)
+
+This sweep showed that performance improved as the learning rate increased up to about `2e-3`, then degraded rapidly for larger values. I therefore fine-tuned around the best region and selected `learning_rate = 2.0e-3` as the final setting. With `beta1=0.9`, `beta2=0.999`, `eps=1e-8`, `weight_decay=0.1`, and `warmup_iters=200`, a 25,000-step run reached best TinyStories validation loss `1.3624` at step `24,000`, and final validation loss `1.3713` at step `25,000`. This satisfies the assignment target of validation loss at most `1.45`.
+
+![Representative learning-rate sweep](/Users/linzihan/Github/assignment1-basics/artifacts/experiments/logs_tracker/figures_learning_rate_a/val_loss_vs_step.png)
+
+Figure: Representative TinyStories validation-loss curves for the learning-rate sweep. The best region is around `1e-3` to `2e-3`, while both smaller and larger learning rates perform worse.
+
 ### (b)
 **Question:** Investigate whether the best LR is “at the edge of stability.” Include increasing-LR curves with at least one divergent run, and analyze relation to convergence.
 
 **Deliverable:** Learning curves and analysis.
 
 **Answer:**
+
+Our results only partially support the folklore that the best learning rate lies exactly at the edge of stability. The best learning rate we found was `2.0e-3`, but a wide range of larger values (`4e-3` through `2e-2`) remained numerically stable while giving clearly worse validation loss. In other words, there was a broad "stable but degraded" region above the optimum.
+
+At very large learning rates, training became practically unusable. In particular, `5e-1` behaved as a failure-side run: validation loss jumped to `38.21` by step `10`, `45.53` by step `20`, and was still `40.81` at step `60`. This run did not produce NaNs within the 60-step pilot window, but it never entered a reasonable optimization regime and required persistent gradient clipping, so it serves as our divergent-like reference curve. Therefore, in this experiment the best learning rate was not right at the literal numerical divergence boundary; instead, it was near the lower edge of a much wider region where increasing the learning rate first hurt optimization quality and only later produced failure-like behavior.
+
+![High-learning-rate behavior](/Users/linzihan/Github/assignment1-basics/artifacts/experiments/logs_tracker/figures_learning_rate_b/val_loss_vs_step.png)
+
+Figure: Validation-loss curves for increasingly large learning rates. Higher learning rates first enter a stable-but-worse regime, and then a clearly unusable failure-side regime (`5e-1`).
 
 ---
 
