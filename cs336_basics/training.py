@@ -54,10 +54,12 @@ def cross_entropy(
         exp_sum.squeeze(-1)
     )
 
+    gather_indices: Int[Tensor, "..."] = targets.to(dtype=torch.int64)
+
     target_logits: Float[Tensor, "..."] = torch.gather(
         logits,
         dim=-1,
-        index=targets.unsqueeze(-1),
+        index=gather_indices.unsqueeze(-1),
     ).squeeze(-1)
 
     per_example_loss: Float[Tensor, "..."] = logsumexp_logits - target_logits
