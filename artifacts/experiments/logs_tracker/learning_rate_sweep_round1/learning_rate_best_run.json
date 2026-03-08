@@ -1,0 +1,13 @@
+{
+  "best_learning_rate": 0.002,
+  "best_val_loss": 3.640631914138794,
+  "best_run_name": "tinystories_lr_auto_lr2p0e-03",
+  "summary_path": ".agents/logs/tinystories_lr_auto_lr2p0e-03/summary.json",
+  "suggested_next_grid": [
+    0.001,
+    0.001414213562373095,
+    0.002,
+    0.00282842712474619,
+    0.004
+  ]
+}

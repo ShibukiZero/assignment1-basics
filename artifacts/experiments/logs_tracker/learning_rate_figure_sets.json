@@ -1,0 +1,14 @@
+{
+  "figures": [
+    {
+      "name": "figures_learning_rate_a",
+      "title": "TinyStories validation loss across representative learning rates",
+      "learning_rates": [0.0001, 0.0003, 0.001, 0.002, 0.5]
+    },
+    {
+      "name": "figures_learning_rate_b",
+      "title": "High-learning-rate behavior on TinyStories",
+      "learning_rates": [0.002, 0.02, 0.2, 0.5]
+    }
+  ]
+}
