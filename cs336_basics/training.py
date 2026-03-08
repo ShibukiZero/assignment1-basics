@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from collections.abc import Iterable
+
 import torch
 from einops import reduce
 from jaxtyping import Float, Int
@@ -57,3 +59,52 @@ def cross_entropy(
 
     per_example_loss: Float[Tensor, "..."] = logsumexp_logits - target_logits
     return per_example_loss.mean()
+
+
+def perplexity(losses: Float[Tensor, "..."]) -> Float[Tensor, ""]:
+    """
+    Compute perplexity from cross-entropy losses.
+
+    This follows the handout definition:
+        perplexity = exp(mean(losses))
+
+    The input may be either:
+    - a tensor of per-token / per-position cross-entropy losses, or
+    - an already-averaged scalar cross-entropy loss.
+    """
+    if losses.numel() == 0:
+        raise ValueError("Expected at least one loss value to compute perplexity.")
+
+    mean_loss: Float[Tensor, ""] = losses.mean()
+    return torch.exp(mean_loss)
+
+
+def gradient_clipping(
+    parameters: Iterable[torch.nn.Parameter],
+    max_l2_norm: float,
+    eps: float = 1e-6,
+) -> None:
+    """
+    Clip the combined gradient norm of all parameters to `max_l2_norm`.
+
+    Important:
+    - This is global gradient clipping, not per-parameter clipping.
+    - Only parameters with `grad is not None` should participate.
+    - Gradients must be modified in place.
+    """
+    if max_l2_norm < 0:
+        raise ValueError(f"Expected max_l2_norm >= 0, got {max_l2_norm}.")
+
+    grads = [parameter.grad for parameter in parameters if parameter.grad is not None]
+    if len(grads) == 0:
+        return
+
+    total_norm: Float[Tensor, ""] = torch.sqrt(
+        sum(grad.square().sum() for grad in grads)
+    )
+    if total_norm <= max_l2_norm:
+        return
+
+    clip_coef: Float[Tensor, ""] = max_l2_norm / (total_norm + eps)
+    for grad in grads:
+        grad.mul_(clip_coef)
