@@ -238,25 +238,117 @@ With a learning rate of `1e1`, the loss decreases steadily but more slowly than 
 **Question:** Compute peak memory for AdamW training in float32. Decompose into parameters, activations, gradients, optimizer state. Express in terms of `batch_size`, `vocab_size`, `context_length`, `num_layers`, `d_model`, `num_heads` (assume `d_ff = 4 * d_model`).  
 **Deliverable:** Algebraic expression for each component and total.
 
-**Answer:**
+**Answer:**  
+Let `B = batch_size`, `V = vocab_size`, `T = context_length`, `L = num_layers`, `D = d_model`, `H = num_heads`, and `d_ff = 4D`. Since all tensors are in float32, each stored element uses `4` bytes.
+
+The total number of model parameters is
+
+`P = 2VD + L(16D^2 + 2D) + D,`
+
+where `2VD` comes from the input embedding and output projection, each Transformer block contributes `4D^2` attention parameters, `12D^2` SwiGLU parameters, and `2D` RMSNorm parameters, and the final RMSNorm contributes `D`.
+
+Therefore, parameter memory is
+
+`M_params = 4P = 4[2VD + L(16D^2 + 2D) + D].`
+
+Gradient memory matches parameter memory because each parameter has a float32 gradient tensor of the same shape:
+
+`M_grads = 4P = 4[2VD + L(16D^2 + 2D) + D].`
+
+For AdamW, the optimizer state stores two float32 tensors per parameter, the first and second moments (`m` and `v`), so
+
+`M_opt = 8P = 8[2VD + L(16D^2 + 2D) + D].`
+
+For activations, counting only the intermediates explicitly listed in the handout:
+
+- per Transformer block:
+  - two RMSNorm outputs: `2BTD`
+  - attention sublayer:
+    - `Q`, `K`, `V` projections: `3BTD`
+    - `QK^T`: `BHT^2`
+    - softmax output: `BHT^2`
+    - weighted sum of values: `BTD`
+    - output projection: `BTD`
+  - position-wise feed-forward:
+    - `W_1` output: `4BTD`
+    - SiLU output: `4BTD`
+    - `W_2` output: `BTD`
+
+So each block contributes
+
+`16BTD + 2BHT^2`
+
+activation elements. Adding the final RMSNorm output (`BTD`), output embedding / logits (`BTV`), and cross-entropy on logits (`BTV`) gives
+
+`M_acts = 4[L(16BTD + 2BHT^2) + BTD + 2BTV].`
+
+The total peak memory is therefore
+
+`M_total = M_params + M_acts + M_grads + M_opt`
+
+`= 16[2VD + L(16D^2 + 2D) + D] + 4[L(16BTD + 2BHT^2) + BTD + 2BTV].`
 
 ### (b)
 **Question:** Instantiate for GPT-2 XL so expression depends only on `batch_size`. What maximum `batch_size` fits in 80GB?  
 **Deliverable:** Expression of form `a * batch_size + b`, and max batch size.
 
-**Answer:**
+**Answer:**  
+For GPT-2 XL, using `V = 50,257`, `T = 1,024`, `L = 48`, `D = 1,600`, and `H = 25`, the total memory expression from part `(a)` becomes
+
+`M_total(B) = 15,517,753,344 * B + 34,032,921,600` bytes,
+
+where the linear term comes from activations and the constant term comes from parameters, gradients, and AdamW optimizer state. If we interpret `80GB` in decimal units as `80,000,000,000` bytes, then the maximum batch size is `2`, since `B = 3` would require `80,586,181,632` bytes. (If one instead uses the binary convention `80 GiB = 80 * 1024^3` bytes, the answer would be `3`, but I use the decimal `80GB` wording from the prompt here.)
 
 ### (c)
 **Question:** How many FLOPs does one AdamW step take?  
 **Deliverable:** Algebraic expression with brief justification.
 
-**Answer:**
+**Answer:**  
+Let `B = batch_size`, `V = vocab_size`, `T = context_length`, `L = num_layers`, `D = d_model`, `H = num_heads`, and `d_ff = 4D`. Reusing the matrix-multiply accounting from `transformer_accounting`, the forward-pass FLOPs for a batch are
+
+`F_forward = L(32BTD^2 + 4BT^2D) + 2BTDV.`
+
+Using the standard approximation that the backward pass costs twice the forward pass, we have
+
+`F_backward ≈ 2F_forward.`
+
+For the AdamW optimizer update itself, treating elementwise arithmetic as constant-cost operations, each parameter contributes a constant number of FLOPs for updating the first moment `m`, second moment `v`, the Adam parameter update, and the decoupled weight decay update. Concretely, for each parameter element:
+
+- first-moment update
+  `m <- beta_1 m + (1 - beta_1) g`
+  costs about `3` FLOPs (`2` multiplies and `1` addition),
+- second-moment update
+  `v <- beta_2 v + (1 - beta_2) g^2`
+  costs about `4` FLOPs (`1` multiply for `g^2`, `2` more multiplies, and `1` addition),
+- Adam parameter update
+  `theta <- theta - alpha_t m / (sqrt(v) + eps)`
+  costs about `5` FLOPs (`sqrt`, add `eps`, divide, multiply, subtract),
+- decoupled weight decay
+  `theta <- theta - alpha lambda theta`
+  costs about `3` FLOPs (`2` multiplies and `1` subtraction).
+
+This gives about `3 + 4 + 5 + 3 = 15` FLOPs per parameter element, so a convenient accounting is
+
+`F_opt ≈ 15P,`
+
+where
+
+`P = 2VD + L(16D^2 + 2D) + D`
+
+is the total number of parameters. Therefore, one AdamW training step requires approximately
+
+`F_step ≈ F_forward + F_backward + F_opt = 3F_forward + 15P`
+
+`= 3[L(32BTD^2 + 4BT^2D) + 2BTDV] + 15[2VD + L(16D^2 + 2D) + D].`
+
+The dominant term is the forward/backward model computation; the optimizer update is lower-order in practice because it is only linear in the parameter count.
 
 ### (d)
 **Question:** A100 FP32 peak is 19.5 TFLOP/s. Assuming 50% MFU, how long (days) to train GPT-2 XL for 400K steps with batch size 1024 on one A100? Assume backward FLOPs = 2x forward FLOPs.  
 **Deliverable:** Number of days with brief justification.
 
-**Answer:**
+**Answer:**  
+Using the forward-pass result from `transformer_accounting`, GPT-2 XL requires `4,513,336,524,800` FLOPs per sequence of length `1024`. With batch size `1024`, this gives `4,621,656,601,395,200` forward FLOPs per training step. Using the approximation `backward = 2 x forward`, plus the AdamW optimizer cost `F_opt = 15P = 31,905,864,000`, one step costs approximately `13,865,001,710,049,600` FLOPs in total. Over `400,000` steps this is `5.54600068401984e21` FLOPs, and at `50%` MFU on a single A100 the effective throughput is `0.5 * 19.5e12 = 9.75e12` FLOP/s, so training would take about `6,583.6` days (about `18.0` years). This is a hypothetical throughput estimate and does not require the batch size to satisfy the separate memory constraint from part `(b)`.
 
 ---
 
