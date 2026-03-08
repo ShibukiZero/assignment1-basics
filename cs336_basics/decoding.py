@@ -121,7 +121,15 @@ def decode(
         raise TypeError(f"Expected integer prompt IDs, got {prompt.dtype}.")
 
     was_training = model.training
-    generated = prompt.clone()
+
+    first_param = next(model.parameters(), None)
+    if first_param is not None:
+        model_device = first_param.device
+    else:
+        first_buffer = next(model.buffers(), None)
+        model_device = first_buffer.device if first_buffer is not None else prompt.device
+
+    generated = prompt.to(device=model_device).clone()
 
     try:
         model.eval()
