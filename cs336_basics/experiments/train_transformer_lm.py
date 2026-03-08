@@ -211,7 +211,12 @@ def main() -> None:
 
     start_step = 0
     if args.resume_from is not None:
-        start_step = load_checkpoint(args.resume_from, model=model, optimizer=optimizer)
+        start_step = load_checkpoint(
+            args.resume_from,
+            model=model,
+            optimizer=optimizer,
+            map_location=torch.device(args.device),
+        )
 
     metrics_path = args.output_dir / "metrics.jsonl"
     latest_checkpoint = args.output_dir / "latest_checkpoint.pt"
@@ -275,16 +280,18 @@ def main() -> None:
                     f"loss={metrics.loss:.6f} perplexity={metrics.perplexity:.6f}"
                 )
 
-        if step > start_step and step % args.checkpoint_interval == 0:
+        completed_steps = step + 1
+
+        if completed_steps % args.checkpoint_interval == 0:
             save_training_checkpoint(
                 model=model,
                 optimizer=optimizer,
-                iteration=step,
+                iteration=completed_steps,
                 output_path=latest_checkpoint,
             )
 
-    final_iteration = args.max_steps - 1
-    if final_iteration >= start_step:
+    final_iteration = args.max_steps
+    if final_iteration > start_step:
         save_training_checkpoint(
             model=model,
             optimizer=optimizer,

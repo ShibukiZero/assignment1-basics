@@ -188,17 +188,18 @@ def load_checkpoint(
     src: str | PathLike | BinaryIO | IO[bytes],
     model: torch.nn.Module,
     optimizer: torch.optim.Optimizer,
+    map_location: str | torch.device | None = None,
 ) -> int:
     """
     Load model state, optimizer state, and iteration count from a checkpoint.
 
     Expected steps:
-    1. `checkpoint = torch.load(src)`
+    1. `checkpoint = torch.load(src, map_location=map_location)`
     2. `model.load_state_dict(checkpoint["model"])`
     3. `optimizer.load_state_dict(checkpoint["optimizer"])`
     4. return `checkpoint["iteration"]`
     """
-    checkpoint = torch.load(src)
+    checkpoint = torch.load(src, map_location=map_location)
     model.load_state_dict(checkpoint["model"])
     optimizer.load_state_dict(checkpoint["optimizer"])
     return checkpoint["iteration"]
