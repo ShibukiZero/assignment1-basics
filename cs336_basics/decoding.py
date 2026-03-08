@@ -129,7 +129,7 @@ def decode(
         first_buffer = next(model.buffers(), None)
         model_device = first_buffer.device if first_buffer is not None else prompt.device
 
-    generated = prompt.to(device=model_device).clone()
+    generated = prompt.to(device=model_device, dtype=torch.int64).clone()
 
     try:
         model.eval()
