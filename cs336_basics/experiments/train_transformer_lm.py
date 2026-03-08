@@ -66,6 +66,19 @@ class EvalMetrics:
 
 
 @dataclass
+class DiagnosticsMetrics:
+    run_name: str
+    timestamp_utc: str
+    wallclock_seconds: float
+    step: int
+    tokens_seen: int
+    learning_rate: float
+    grad_norm_pre_clip: float
+    grad_norm_post_clip: float
+    param_norm: float
+
+
+@dataclass
 class RunSummary:
     run_name: str
     final_step: int
@@ -168,6 +181,24 @@ def maybe_make_summary_writer(
     tensorboard_dir.mkdir(parents=True, exist_ok=True)
     print(f"tensorboard=enabled log_dir={tensorboard_dir}")
     return SummaryWriter(log_dir=str(tensorboard_dir))
+
+
+def global_grad_norm(parameters: list[torch.nn.Parameter]) -> float:
+    grad_norm_sq = 0.0
+    for param in parameters:
+        if param.grad is None:
+            continue
+        grad = param.grad.detach()
+        grad_norm_sq += float(torch.sum(grad * grad).item())
+    return grad_norm_sq**0.5
+
+
+def global_param_norm(parameters: list[torch.nn.Parameter]) -> float:
+    param_norm_sq = 0.0
+    for param in parameters:
+        value = param.detach()
+        param_norm_sq += float(torch.sum(value * value).item())
+    return param_norm_sq**0.5
 
 
 def resolve_log_dir(*, requested_log_dir: Path | None, run_name: str) -> Path:
@@ -355,6 +386,7 @@ def main() -> None:
         )
 
     metrics_path = log_dir / "metrics.jsonl"
+    diagnostics_path = log_dir / "diagnostics.jsonl"
     config_path = log_dir / "config.json"
     summary_path = log_dir / "summary.json"
     latest_checkpoint = args.output_dir / "latest_checkpoint.pt"
@@ -377,6 +409,7 @@ def main() -> None:
     start_time = time.perf_counter()
     best_val_loss: float | None = None
     best_val_step: int | None = None
+    model_parameters = [param for param in model.parameters()]
 
     for step in range(start_step, args.max_steps):
         learning_rate = lr_cosine_schedule(
@@ -402,13 +435,27 @@ def main() -> None:
         loss = cross_entropy(flat_logits, flat_targets)
 
         loss.backward()
+        grad_norm_pre_clip = global_grad_norm(model_parameters)
         gradient_clipping(model.parameters(), args.grad_clip)
+        grad_norm_post_clip = global_grad_norm(model_parameters)
         optimizer.step()
+        param_norm = global_param_norm(model_parameters)
         completed_steps = step + 1
 
         if completed_steps % args.eval_interval == 0:
             wallclock_seconds = time.perf_counter() - start_time
             tokens_seen = completed_steps * args.batch_size * args.context_length
+            diagnostics = DiagnosticsMetrics(
+                run_name=run_name,
+                timestamp_utc=datetime.now(timezone.utc).isoformat(),
+                wallclock_seconds=wallclock_seconds,
+                step=completed_steps,
+                tokens_seen=tokens_seen,
+                learning_rate=learning_rate,
+                grad_norm_pre_clip=grad_norm_pre_clip,
+                grad_norm_post_clip=grad_norm_post_clip,
+                param_norm=param_norm,
+            )
             train_metrics = evaluate_loss(
                 model=model,
                 dataset=train_tokens,
@@ -439,6 +486,14 @@ def main() -> None:
                 learning_rate=learning_rate,
             )
 
+            append_jsonl(diagnostics_path, asdict(diagnostics))
+            print(
+                f"step={diagnostics.step} diagnostics "
+                f"grad_pre={diagnostics.grad_norm_pre_clip:.6f} "
+                f"grad_post={diagnostics.grad_norm_post_clip:.6f} "
+                f"param_norm={diagnostics.param_norm:.6f}"
+            )
+
             for metrics in (train_metrics, val_metrics):
                 append_jsonl(metrics_path, asdict(metrics))
                 print(
@@ -458,8 +513,25 @@ def main() -> None:
 
             if writer is not None:
                 writer.add_scalar("lr", learning_rate, completed_steps)
-                writer.add_scalar("time/wallclock_seconds", wallclock_seconds, completed_steps)
+                writer.add_scalar(
+                    "time/wallclock_seconds", wallclock_seconds, completed_steps
+                )
                 writer.add_scalar("tokens/seen", tokens_seen, completed_steps)
+                writer.add_scalar(
+                    "grad/global_norm_pre_clip",
+                    diagnostics.grad_norm_pre_clip,
+                    completed_steps,
+                )
+                writer.add_scalar(
+                    "grad/global_norm_post_clip",
+                    diagnostics.grad_norm_post_clip,
+                    completed_steps,
+                )
+                writer.add_scalar(
+                    "param/global_norm",
+                    diagnostics.param_norm,
+                    completed_steps,
+                )
                 writer.flush()
 
             if best_val_loss is None or val_metrics.loss < best_val_loss:
