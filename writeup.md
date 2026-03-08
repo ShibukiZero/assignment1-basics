@@ -211,7 +211,8 @@ For GPT-2 XL, increasing the context length from `1024` to `16,384` raises the t
 **Question:** Run the toy SGD example with learning rates `1e1`, `1e2`, and `1e3` for 10 iterations. What happens to loss for each LR (faster decay, slower decay, or divergence)?  
 **Deliverable:** A one-to-two sentence response.
 
-**Answer:**
+**Answer:**  
+With a learning rate of `1e1`, the loss decreases steadily but more slowly than with `1e2`. A learning rate of `1e2` reduces the loss faster, while `1e3` causes the optimization to diverge rather than converge.
 
 ---
 
