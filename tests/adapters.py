@@ -237,6 +237,18 @@ def run_multihead_self_attention_with_rope(
             "output_proj.weight": o_proj_weight,
         },
     )
+    if token_positions is None:
+        sequence_length = in_features.shape[-2]
+        token_positions = torch.arange(
+            sequence_length,
+            device=in_features.device,
+            dtype=torch.long,
+        )
+        token_positions = token_positions.view(
+            *([1] * (in_features.ndim - 2)),
+            sequence_length,
+        ).expand(*in_features.shape[:-1])
+
     return attention(in_features, token_positions)
 
 
