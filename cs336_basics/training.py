@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 from collections.abc import Iterable
+from os import PathLike
+from typing import BinaryIO, IO
 
 import numpy as np
 import torch
@@ -153,3 +155,50 @@ def get_batch(
     x = torch.tensor(x_np, device=device, dtype=torch.long)
     y = torch.tensor(y_np, device=device, dtype=torch.long)
     return x, y
+
+
+def save_checkpoint(
+    model: torch.nn.Module,
+    optimizer: torch.optim.Optimizer,
+    iteration: int,
+    out: str | PathLike | BinaryIO | IO[bytes],
+) -> None:
+    """
+    Save model state, optimizer state, and iteration count to a checkpoint.
+
+    Suggested checkpoint payload:
+    {
+        "model": model.state_dict(),
+        "optimizer": optimizer.state_dict(),
+        "iteration": iteration,
+    }
+    """
+    if iteration < 0:
+        raise ValueError(f"Expected iteration >= 0, got {iteration}.")
+
+    checkpoint = {
+        "model": model.state_dict(),
+        "optimizer": optimizer.state_dict(),
+        "iteration": iteration,
+    }
+    torch.save(checkpoint, out)
+
+
+def load_checkpoint(
+    src: str | PathLike | BinaryIO | IO[bytes],
+    model: torch.nn.Module,
+    optimizer: torch.optim.Optimizer,
+) -> int:
+    """
+    Load model state, optimizer state, and iteration count from a checkpoint.
+
+    Expected steps:
+    1. `checkpoint = torch.load(src)`
+    2. `model.load_state_dict(checkpoint["model"])`
+    3. `optimizer.load_state_dict(checkpoint["optimizer"])`
+    4. return `checkpoint["iteration"]`
+    """
+    checkpoint = torch.load(src)
+    model.load_state_dict(checkpoint["model"])
+    optimizer.load_state_dict(checkpoint["optimizer"])
+    return checkpoint["iteration"]
