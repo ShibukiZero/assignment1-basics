@@ -46,7 +46,7 @@ Conventions:
 - Optimization summary: `batch_size=4`, `max_steps=3`, `eval_interval=1`, `eval_batches=1`, `learning_rate=1e-3`, `min_learning_rate=1e-4`, `warmup_iters=1`, `cosine_cycle_iters=3`
 - Large-artifact path: `/root/autodl-tmp/training_runs/ch7_logging_smoke`
 - Lightweight-log path: `.agents/logs/ch7_logging_smoke`
-- TensorBoard path: `.agents/logs/ch7_logging_smoke/tensorboard`
+- TensorBoard path: `/root/tf-logs/ch7_logging_smoke`
 - Key metrics:
   - best validation loss: `9.192152` at step `3`
   - final step: `3`
@@ -59,7 +59,7 @@ Conventions:
   - `config.json` captures run metadata, model config, optimization config, and directory layout
   - `metrics.jsonl` includes `step`, `wallclock_seconds`, `tokens_seen`, `split`, `loss`, `perplexity`, `learning_rate`, `batch_size`, and `context_length`
   - `summary.json` records best-checkpoint and final-wallclock information
-  - TensorBoard event logging succeeded under the lightweight log directory
+  - TensorBoard event logging succeeded under `/root/tf-logs/ch7_logging_smoke`
   - The checkpoint/log split now matches the intended workflow
 - Decision: The Chapter 7.1 logging infrastructure is sufficient for baseline experiments.
 - Next action: Start the TinyStories baseline and learning-rate sweep, and append each subsequent run to this file.

@@ -87,6 +87,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--output-dir", type=Path, required=True)
     parser.add_argument("--log-dir", type=Path, default=None)
     parser.add_argument("--run-name", type=str, default=None)
+    parser.add_argument("--tensorboard-root", type=Path, default=Path("/root/tf-logs"))
     parser.add_argument("--disable-tensorboard", action="store_true")
     parser.add_argument("--seed", type=int, default=42)
 
@@ -316,7 +317,7 @@ def main() -> None:
     args.output_dir.mkdir(parents=True, exist_ok=True)
     run_name = args.run_name or args.output_dir.name
     log_dir = resolve_log_dir(requested_log_dir=args.log_dir, run_name=run_name)
-    tensorboard_dir = log_dir / "tensorboard"
+    tensorboard_dir = args.tensorboard_root / run_name
     log_dir.mkdir(parents=True, exist_ok=True)
 
     train_tokens = load_token_array(args.train_npy)
