@@ -3,7 +3,7 @@
 This directory stores reproducible outputs from assignment experiments.
 
 ## Subdirectories
-- `logs_tracker/`: Chapter 7 durable run ledger, summarized sweep outputs, and plotting utilities.
+- `logs_tracker/`: Chapter 7 durable run ledger, persisted summarized results, figures, and plotting utilities.
 - `tokenizer/`: tokenizer training and tokenizer-related experiment artifacts.
 
 ## Related code

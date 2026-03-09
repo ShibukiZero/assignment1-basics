@@ -15,8 +15,9 @@ Files:
 - `experiment_log.md`: per-run durable ledger with copied key metrics
 - `phase_summary.md`: phase-level conclusions and next-step decisions
 - `plot_*.py`: plotting entrypoints
-- `*_round*/`: summarized results for a completed sweep round
-- `figures_*/`: figures intended for the writeup
+- `results/`: summarized outputs and persisted lightweight run artifacts copied from temporary logs
+- `figures/`: figures intended for the writeup
+- `learning_rate_figure_sets.json`: configured figure groups for automated LR plots
 
 Update rule:
 - Add each new run to the top of `experiment_log.md`
