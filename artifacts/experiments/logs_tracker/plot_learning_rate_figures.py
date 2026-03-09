@@ -20,8 +20,14 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--log-root",
         type=Path,
-        default=Path(".agents/logs"),
-        help="Root directory containing per-run logs.",
+        default=None,
+        help="Fallback root directory containing per-run logs.",
+    )
+    parser.add_argument(
+        "--run-manifest",
+        type=Path,
+        default=None,
+        help="Optional learning_rate_runs.json produced by summarize_learning_rate_sweep.py.",
     )
     parser.add_argument(
         "--output-root",
@@ -70,6 +76,14 @@ def main() -> None:
 
     with args.figure_config.open("r", encoding="utf-8") as f:
         config = json.load(f)
+    manifest_by_lr: dict[float, Path] = {}
+    if args.run_manifest is not None:
+        with args.run_manifest.open("r", encoding="utf-8") as f:
+            manifest_rows = json.load(f)
+        for row in manifest_rows:
+            artifact_metrics_path = row.get("artifact_metrics_path")
+            if artifact_metrics_path:
+                manifest_by_lr[float(row["learning_rate"])] = Path(artifact_metrics_path)
 
     plot_script = Path(__file__).with_name("plot_learning_rate_curves.py")
 
@@ -91,8 +105,16 @@ def main() -> None:
         ]
 
         for learning_rate in figure["learning_rates"]:
-            run_name = run_name_for_lr(args.run_prefix, float(learning_rate))
-            metrics_path = args.log_root / run_name / "metrics.jsonl"
+            lr_value = float(learning_rate)
+            if lr_value in manifest_by_lr:
+                metrics_path = manifest_by_lr[lr_value]
+            elif args.log_root is not None:
+                run_name = run_name_for_lr(args.run_prefix, lr_value)
+                metrics_path = args.log_root / run_name / "metrics.jsonl"
+            else:
+                raise ValueError(
+                    f"No artifact metrics path for learning_rate={lr_value} and no --log-root fallback was provided."
+                )
             command.extend(
                 [
                     "--run",

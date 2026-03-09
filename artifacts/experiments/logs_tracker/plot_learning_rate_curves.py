@@ -59,7 +59,10 @@ def parse_run_spec(raw: str) -> tuple[str, Path]:
             f"Expected LABEL=METRICS_JSONL format, got {raw!r}."
         )
     label, raw_path = raw.split("=", maxsplit=1)
-    return label, Path(raw_path)
+    path = Path(raw_path)
+    if path.is_dir():
+        path = path / "metrics.jsonl"
+    return label, path
 
 
 def load_points(metrics_path: Path, *, split: str, metric: str) -> list[dict]:

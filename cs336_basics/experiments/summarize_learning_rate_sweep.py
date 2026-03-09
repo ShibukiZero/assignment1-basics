@@ -3,6 +3,7 @@ from __future__ import annotations
 import argparse
 import json
 import re
+import shutil
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -21,6 +22,7 @@ class RunResult:
     final_step: int
     total_wallclock_seconds: float
     summary_path: Path
+    run_dir: Path
 
 
 def parse_args() -> argparse.Namespace:
@@ -76,11 +78,28 @@ def load_summary(run_dir: Path, run_prefix: str) -> RunResult | None:
         final_step=int(summary["final_step"]),
         total_wallclock_seconds=float(summary["total_wallclock_seconds"]),
         summary_path=summary_path,
+        run_dir=run_dir,
     )
 
 
 def geometric_midpoint(a: float, b: float) -> float:
     return (a * b) ** 0.5
+
+
+def persist_run_artifacts(result: RunResult, destination_root: Path) -> dict[str, str]:
+    destination_dir = destination_root / result.run_name
+    destination_dir.mkdir(parents=True, exist_ok=True)
+
+    copied_paths: dict[str, str] = {"artifact_run_dir": str(destination_dir)}
+    for filename in ("metrics.jsonl", "summary.json", "diagnostics.jsonl", "config.json"):
+        source = result.run_dir / filename
+        if not source.exists():
+            continue
+        target = destination_dir / filename
+        shutil.copy2(source, target)
+        key = f"artifact_{filename.replace('.', '_')}"
+        copied_paths[key] = str(target)
+    return copied_paths
 
 
 def suggest_next_grid(results: list[RunResult]) -> list[float]:
@@ -105,6 +124,7 @@ def suggest_next_grid(results: list[RunResult]) -> list[float]:
 def main() -> None:
     args = parse_args()
     args.output_dir.mkdir(parents=True, exist_ok=True)
+    persisted_runs_root = args.output_dir / "runs"
 
     results: list[RunResult] = []
     for run_dir in sorted(args.log_root.iterdir()):
@@ -131,6 +151,21 @@ def main() -> None:
     if results:
         best_result = min(results, key=lambda result: result.best_val_loss)
         suggested = suggest_next_grid(results)
+        persisted_rows = []
+        for result in results:
+            persisted = persist_run_artifacts(result, persisted_runs_root)
+            persisted_rows.append(
+                {
+                    "run_name": result.run_name,
+                    "learning_rate": result.learning_rate,
+                    "best_val_loss": result.best_val_loss,
+                    "best_val_step": result.best_val_step,
+                    "final_step": result.final_step,
+                    "total_wallclock_seconds": result.total_wallclock_seconds,
+                    "summary_path": str(result.summary_path),
+                    **persisted,
+                }
+            )
         lines.extend(
             [
                 "",
@@ -149,8 +184,23 @@ def main() -> None:
             "summary_path": str(best_result.summary_path),
             "suggested_next_grid": suggested,
         }
+        best_persisted = next(
+            row for row in persisted_rows if row["run_name"] == best_result.run_name
+        )
+        payload.update(
+            {
+                "artifact_run_dir": best_persisted["artifact_run_dir"],
+                "artifact_metrics_path": best_persisted.get("artifact_metrics_jsonl"),
+                "artifact_summary_path": best_persisted.get("artifact_summary_json"),
+                "artifact_diagnostics_path": best_persisted.get("artifact_diagnostics_jsonl"),
+                "artifact_config_path": best_persisted.get("artifact_config_json"),
+            }
+        )
         with (args.output_dir / "learning_rate_best_run.json").open("w", encoding="utf-8") as f:
             json.dump(payload, f, indent=2)
+            f.write("\n")
+        with (args.output_dir / "learning_rate_runs.json").open("w", encoding="utf-8") as f:
+            json.dump(persisted_rows, f, indent=2)
             f.write("\n")
 
     (args.output_dir / "learning_rate_sweep_summary.md").write_text(

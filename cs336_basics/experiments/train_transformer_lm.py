@@ -404,6 +404,7 @@ def main() -> None:
     metrics_path = log_dir / "metrics.jsonl"
     diagnostics_path = log_dir / "diagnostics.jsonl"
     config_path = log_dir / "config.json"
+    artifact_config_path = args.output_dir / "config.json"
     summary_path = log_dir / "summary.json"
     latest_checkpoint = args.output_dir / "latest_checkpoint.pt"
     best_checkpoint = args.output_dir / "best_checkpoint.pt"
@@ -411,16 +412,16 @@ def main() -> None:
         tensorboard_dir=tensorboard_dir,
         enable_tensorboard=args.enable_tensorboard and not args.disable_tensorboard,
     )
-    write_json(
-        config_path,
-        make_run_config(
-            args=args,
-            run_name=run_name,
-            log_dir=log_dir,
-            tensorboard_dir=tensorboard_dir,
-            tensorboard_enabled=writer is not None,
-        ),
+    run_config = make_run_config(
+        args=args,
+        run_name=run_name,
+        log_dir=log_dir,
+        tensorboard_dir=tensorboard_dir,
+        tensorboard_enabled=writer is not None,
     )
+    write_json(config_path, run_config)
+    if not args.disable_checkpoints:
+        write_json(artifact_config_path, run_config)
 
     start_time = time.perf_counter()
     best_val_loss: float | None = None
