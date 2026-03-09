@@ -352,24 +352,6 @@ Using the forward-pass result from `transformer_accounting`, GPT-2 XL requires `
 
 ---
 
-## Problem `experiment_log`: Experiment logging (3 points)
-
-**Question:** Build experiment tracking infrastructure to record losses by gradient steps and wall-clock time.  
-**Deliverable:** Logging infrastructure code and an experiment log document of attempted runs.
-
-**Writeup content (summary of experiment log):**
-
-I added lightweight experiment tracking to the TinyStories training script so that every run writes `config.json`, `metrics.jsonl`, `summary.json`, and `diagnostics.jsonl`, while TensorBoard event files are written under `/root/tf-logs/<run_name>`. Each logged metric record includes at least `step`, `wallclock_seconds`, `split`, `loss`, `perplexity`, and the optimization metadata needed to reconstruct curves; this supports plotting both loss-versus-step and loss-versus-wallclock-time, as requested by the handout.
-
-**Links/paths to logs and curves:**
-
-- Durable experiment ledger: `artifacts/experiments/logs_tracker/experiment_log.md`
-- Phase summary: `artifacts/experiments/logs_tracker/phase_summary.md`
-- Representative LR-sweep figures: `artifacts/experiments/logs_tracker/figures_learning_rate_a/`
-- High-LR/failure-side figures: `artifacts/experiments/logs_tracker/figures_learning_rate_b/`
-
----
-
 ## Problem `learning_rate`: Tune the learning rate (3 points)
 
 ### (a)
@@ -379,21 +361,13 @@ I added lightweight experiment tracking to the TinyStories training script so th
 
 **Answer:**
 
-We tuned the TinyStories baseline model (`vocab_size=10000`, `context_length=256`, `d_model=512`, `d_ff=1344`, `num_layers=4`, `num_heads=16`, `rope_theta=10000`) with a staged search strategy. We first ran short 60-step pilot sweeps with `warmup_iters=20` to identify a good learning-rate region, then used longer confirmation runs to break ties, and finally trained the best setting for 25,000 steps. The representative pilot results were:
+I reran the learning-rate search on the same TinyStories baseline model but with `batch_size=128`, since this batch size is a better fit for my hardware. The model configuration was unchanged (`vocab_size=10000`, `context_length=256`, `d_model=512`, `d_ff=1344`, `num_layers=4`, `num_heads=16`, `rope_theta=10000`). I used a two-stage strategy: a broad 60-step pilot sweep with `warmup_iters=20` to bracket the promising region and the failure-side region, followed by a refined sweep around the local optimum.
 
-- `1e-4`: best validation loss `5.9340`
-- `3e-4`: best validation loss `4.3626`
-- `1e-3`: best validation loss `3.7093`
-- `2e-3`: best validation loss `3.6406`
-- `2e-2`: best validation loss `4.3934`
-- `2e-1`: best validation loss `6.7279`
-- `5e-1`: best validation loss `25.7417` (failure-side run)
+In the refined `batch_size=128` sweep, the best learning rate was `4.0e-3`, with best validation loss `3.5015` at step `60`. Nearby values were slightly worse (`2.5e-3 -> 3.5286`, `3.5e-3 -> 3.5669`, `4.5e-3 -> 3.7722`, `5.0e-3 -> 3.8112`), so the local optimum is clearly centered near `4e-3`. I then ran a longer 2,000-step confirmation run with `learning_rate=4.0e-3`, `warmup_iters=200`, `beta1=0.9`, `beta2=0.999`, `eps=1e-8`, and `weight_decay=0.1`; this run reached best validation loss `1.5389` at step `1800`, which is promising but still above the `1.45` target. Therefore, I used the `batch_size=128` rerun to identify the best LR and analyze stability, while the target-reaching final model remained the previously trained long run that reached validation loss `1.3624`.
 
-This sweep showed that performance improved as the learning rate increased up to about `2e-3`, then degraded rapidly for larger values. I therefore fine-tuned around the best region and selected `learning_rate = 2.0e-3` as the final setting. With `beta1=0.9`, `beta2=0.999`, `eps=1e-8`, `weight_decay=0.1`, and `warmup_iters=200`, a 25,000-step run reached best TinyStories validation loss `1.3624` at step `24,000`, and final validation loss `1.3713` at step `25,000`. This satisfies the assignment target of validation loss at most `1.45`.
+![Representative learning-rate sweep](artifacts/experiments/logs_tracker/figures_bs128_learning_rate/val_loss_vs_step.png)
 
-![Representative learning-rate sweep](/Users/linzihan/Github/assignment1-basics/artifacts/experiments/logs_tracker/figures_learning_rate_a/val_loss_vs_step.png)
-
-Figure: Representative TinyStories validation-loss curves for the learning-rate sweep. The best region is around `1e-3` to `2e-3`, while both smaller and larger learning rates perform worse.
+Figure: TinyStories validation-loss curves at `batch_size=128` for representative learning rates. The best region is centered near `4e-3`, while larger learning rates quickly degrade.
 
 ### (b)
 **Question:** Investigate whether the best LR is “at the edge of stability.” Include increasing-LR curves with at least one divergent run, and analyze relation to convergence.
@@ -402,13 +376,13 @@ Figure: Representative TinyStories validation-loss curves for the learning-rate 
 
 **Answer:**
 
-Our results only partially support the folklore that the best learning rate lies exactly at the edge of stability. The best learning rate we found was `2.0e-3`, but a wide range of larger values (`4e-3` through `2e-2`) remained numerically stable while giving clearly worse validation loss. In other words, there was a broad "stable but degraded" region above the optimum.
+The `batch_size=128` rerun again suggests that the best learning rate is not exactly at the literal numerical divergence boundary. The best setting in the refined sweep was `4.0e-3`, but a range of larger values (`1.2e-2`, `2e-2`, `5e-2`) still trained without NaNs while giving clearly worse losses. In other words, there is a substantial "stable but degraded" region above the optimum.
 
-At very large learning rates, training became practically unusable. In particular, `5e-1` behaved as a failure-side run: validation loss jumped to `38.21` by step `10`, `45.53` by step `20`, and was still `40.81` at step `60`. This run did not produce NaNs within the 60-step pilot window, but it never entered a reasonable optimization regime and required persistent gradient clipping, so it serves as our divergent-like reference curve. Therefore, in this experiment the best learning rate was not right at the literal numerical divergence boundary; instead, it was near the lower edge of a much wider region where increasing the learning rate first hurt optimization quality and only later produced failure-like behavior.
+At still larger learning rates, training became effectively unusable. In the same pilot setup, `1e-1` reached validation loss `5.4419`, `2e-1` reached `5.9544`, and `5e-1` reached `22.5846`. These runs did not numerically explode to NaN within 60 steps, but they never entered a useful optimization regime and are strong failure-side references. So in this experiment the best learning rate is better described as lying near the lower edge of a broad degraded region, rather than exactly at the point of numerical divergence.
 
-![High-learning-rate behavior](/Users/linzihan/Github/assignment1-basics/artifacts/experiments/logs_tracker/figures_learning_rate_b/val_loss_vs_step.png)
+![High-learning-rate behavior](artifacts/experiments/logs_tracker/figures_bs128_learning_rate/val_loss_vs_step.png)
 
-Figure: Validation-loss curves for increasingly large learning rates. Higher learning rates first enter a stable-but-worse regime, and then a clearly unusable failure-side regime (`5e-1`).
+Figure: At `batch_size=128`, learning rates above the optimum quickly move from "worse but stable" into an unusable failure-side regime.
 
 ---
 
@@ -424,7 +398,7 @@ I varied batch size from `1` up to the memory-limit region (`544`) and re-tuned 
 
 At a fixed 400-step pilot budget, validation loss improved steadily as batch size increased. The best validation losses were `2.194` at `bs=64`, `1.961` at `bs=128`, `1.792` at `bs=256`, `1.672` at `bs=512`, and `1.664` at `bs=544`. However, step time also increased substantially: about `0.255s/step` at `bs=128`, `0.492s/step` at `bs=256`, `0.985s/step` at `bs=512`, and `1.046s/step` at `bs=544`. In practice, `bs=128` is a good speed-oriented default, while `bs=256` is the best overall quality/throughput compromise on my hardware. `bs=512` and `bs=544` gave slightly better validation loss in the pilot, but their per-step cost was much higher.
 
-![Batch-size comparison](/Users/linzihan/Github/assignment1-basics/artifacts/experiments/logs_tracker/figures_batch_size_round2/val_loss_vs_step.png)
+![Batch-size comparison](artifacts/experiments/logs_tracker/figures_batch_size_round2/val_loss_vs_step.png)
 
 Figure: Best validation-loss curve for each batch size after local LR retuning. Larger batch sizes achieve lower loss in the fixed-step pilot, but the runtime cost grows sharply beyond `bs=256`.
 

@@ -20,8 +20,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--log-root",
         type=Path,
-        default=Path(".agents/logs"),
-        help="Root directory containing per-run metrics.jsonl files.",
+        default=None,
+        help="Fallback log root containing per-run metrics.jsonl files when artifact paths are unavailable.",
     )
     parser.add_argument(
         "--output-dir",
@@ -145,7 +145,15 @@ def main() -> None:
     runs: list[tuple[str, list[dict]]] = []
     for row in best_rows:
         run_name = row["best_run_name"]
-        metrics_path = args.log_root / run_name / "metrics.jsonl"
+        raw_metrics_path = row.get("artifact_metrics_path")
+        if raw_metrics_path:
+            metrics_path = Path(raw_metrics_path)
+        elif args.log_root is not None:
+            metrics_path = args.log_root / run_name / "metrics.jsonl"
+        else:
+            raise ValueError(
+                f"Missing artifact_metrics_path for {run_name} and no --log-root fallback provided."
+            )
         points = load_points(metrics_path, split=args.split, metric=args.metric)
         label = f"bs={row['batch_size']} (lr={row['best_learning_rate']:.3g})"
         runs.append((label, points))

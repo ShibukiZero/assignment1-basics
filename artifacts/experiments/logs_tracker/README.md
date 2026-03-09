@@ -1,17 +1,22 @@
-# Chapter 7 Experiment Tracking
+# Chapter 7 Log Tracker
 
-This directory stores durable, in-repo tracking documents for Chapter 7.
+This directory stores durable experiment records, generated summaries, and plotting utilities for Chapter 7.
 
 Scope:
 - Keep a running experiment ledger outside `.agents/`
-- Record why each run happened, when it happened, and what changed
-- Point to the real artifacts:
-  - large artifacts on the data disk
-  - lightweight logs under `.agents/logs/<run_name>/`
+- Store summarized outputs that are useful for the final writeup
+- Keep plotting scripts close to the result folders they consume
+
+This directory should not contain experiment runner scripts. Training / sweep execution code lives under:
+- `cs336_basics/experiments/`
+- `cs336_basics/experiments/sweep_configs/`
 
 Files:
 - `experiment_log.md`: per-run durable ledger with copied key metrics
 - `phase_summary.md`: phase-level conclusions and next-step decisions
+- `plot_*.py`: plotting entrypoints
+- `*_round*/`: summarized results for a completed sweep round
+- `figures_*/`: figures intended for the writeup
 
 Update rule:
 - Add each new run to the top of `experiment_log.md`
