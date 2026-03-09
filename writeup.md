@@ -361,9 +361,11 @@ Using the forward-pass result from `transformer_accounting`, GPT-2 XL requires `
 
 **Answer:**
 
-I reran the learning-rate search on the same TinyStories baseline model but with `batch_size=128`, since this batch size is a better fit for my hardware. The model configuration was unchanged (`vocab_size=10000`, `context_length=256`, `d_model=512`, `d_ff=1344`, `num_layers=4`, `num_heads=16`, `rope_theta=10000`). I used a two-stage strategy: a broad 60-step pilot sweep with `warmup_iters=20` to bracket the promising region and the failure-side region, followed by a refined sweep around the local optimum.
+I reran the learning-rate search on the TinyStories baseline model using `batch_size=128`, since this batch size is a better fit for my hardware. The model configuration was otherwise unchanged (`vocab_size=10000`, `context_length=256`, `d_model=512`, `d_ff=1344`, `num_layers=4`, `num_heads=16`, `rope_theta=10000`). I used a two-stage search strategy: a broad 60-step pilot sweep to bracket the good region and the failure-side region, followed by a refined sweep around the local optimum.
 
-In the refined `batch_size=128` sweep, the best learning rate was `4.0e-3`, with best validation loss `3.5015` at step `60`. Nearby values were slightly worse (`2.5e-3 -> 3.5286`, `3.5e-3 -> 3.5669`, `4.5e-3 -> 3.7722`, `5.0e-3 -> 3.8112`), so the local optimum is clearly centered near `4e-3`. I then ran a longer 2,000-step confirmation run with `learning_rate=4.0e-3`, `warmup_iters=200`, `beta1=0.9`, `beta2=0.999`, `eps=1e-8`, and `weight_decay=0.1`; this run reached best validation loss `1.5389` at step `1800`, which is promising but still above the `1.45` target. Therefore, I used the `batch_size=128` rerun to identify the best LR and analyze stability, while the target-reaching final model remained the previously trained long run that reached validation loss `1.3624`.
+The coarse sweep showed that the best region was near a few times `10^-3`, while much larger learning rates quickly degraded. In the refined sweep, the best learning rate was `4.0e-3`, with best validation loss `3.5015` at step `60`. Nearby values were all slightly worse (`2.5e-3 -> 3.5286`, `3.5e-3 -> 3.5669`, `4.5e-3 -> 3.7722`, `5.0e-3 -> 3.8112`), so the local optimum was clearly centered near `4e-3`.
+
+I then used `learning_rate=4.0e-3` for a longer training run with `warmup_iters=200`, `beta1=0.9`, `beta2=0.999`, `eps=1e-8`, and `weight_decay=0.1`. With `batch_size=128` and `10000` steps, this run processed exactly `327,680,000` tokens and reached best validation loss `1.3234` at step `10000`, comfortably beating the assignment target of `1.45`. This is therefore the final learning rate I selected for the TinyStories model under the `batch_size=128` setting.
 
 ![Representative learning-rate sweep](artifacts/experiments/logs_tracker/figures/bs128_learning_rate/val_loss_vs_step.png)
 
@@ -376,9 +378,9 @@ Figure: TinyStories validation-loss curves at `batch_size=128` for representativ
 
 **Answer:**
 
-The `batch_size=128` rerun again suggests that the best learning rate is not exactly at the literal numerical divergence boundary. The best setting in the refined sweep was `4.0e-3`, but a range of larger values (`1.2e-2`, `2e-2`, `5e-2`) still trained without NaNs while giving clearly worse losses. In other words, there is a substantial "stable but degraded" region above the optimum.
+The `batch_size=128` rerun suggests that the best learning rate is not exactly at the literal numerical divergence boundary. The refined optimum was `4.0e-3`, but a range of larger values (`1.2e-2`, `2e-2`, `5e-2`) still trained for 60 steps without NaNs while giving clearly worse validation loss. In other words, there is a substantial "stable but degraded" region above the optimum.
 
-At still larger learning rates, training became effectively unusable. In the same pilot setup, `1e-1` reached validation loss `5.4419`, `2e-1` reached `5.9544`, and `5e-1` reached `22.5846`. These runs did not numerically explode to NaN within 60 steps, but they never entered a useful optimization regime and are strong failure-side references. So in this experiment the best learning rate is better described as lying near the lower edge of a broad degraded region, rather than exactly at the point of numerical divergence.
+At still larger learning rates, training became effectively unusable. In the same pilot setup, `1e-1` reached validation loss `5.4419`, `2e-1` reached `5.9544`, and `5e-1` reached `22.5846`. These runs did not numerically explode to NaN within the short pilot horizon, but they never entered a useful optimization regime and serve as clear failure-side references. So in this experiment the best learning rate is better described as lying near the lower edge of a broad degraded region, rather than exactly at the point of numerical divergence.
 
 ![High-learning-rate behavior](artifacts/experiments/logs_tracker/figures/bs128_learning_rate/val_loss_vs_step.png)
 
@@ -413,17 +415,18 @@ Figure: Best validation-loss curve for each batch size after local LR retuning. 
 **Generated text:**
 
 ```text
-Once upon a time, there was a little girl named Lily. She lived in a small house with her mom, dad, and her dog, Spot. They loved to play with Lily, and they were always happy.
-One day, Lily and Spot were playing outside when Lily saw a big tree. She wanted to climb it, but she was scared. Spot barked and jumped, but he couldn't climb the tree. Lily was sad and did not know what to do.
-Then, a kind bird came and helped Lily. The bird said, "Don't be scared, I can help you." The bird flew up to the tree and helped Lily. Lily was so happy! She hugged Spot and said, "Thank you!" From that day on, Lily, Spot, and the bird played together every day.
+Once upon a time, there was a happy little girl named Mia. She loved to play with her toys and make new friends. One day, she found a small green mint in her toy box. Mia thought it would be fun to hide the mint in her toy box.
+Mia put the mint in a special box and hid it under her bed. She wanted her friends to find the mint when she went to play outside. She thought, "I will play a game with my friends, and they will find the mint."
+The next day, Mia went to the park with her mom. They saw a big, round, and shiny thing in the grass. Mia picked it up and showed it to her friends. They all thought it was a new toy and wanted to play with it.
+Mia took the mint and showed it to her friends. They all looked at it and thought it was very pretty. Mia decided to keep the mint in her toy box and show it to her friends. They all thought it was very special and loved it too. From that day on, Mia and her friends always played with the magic mint and had lots of fun together.
 <|endoftext|>
 ```
 
 **Commentary:**
 
-The sample is fluent and clearly matches the TinyStories style: it has simple vocabulary, short sentences, a coherent character setup, and a complete ending. The model maintains local consistency well (the same characters and setting remain present throughout), and it produces a plausible narrative arc rather than random sentence fragments.
+The sample is fluent and clearly matches the TinyStories style: it uses simple vocabulary, short sentences, and a coherent narrative arc with a beginning, development, and ending. The story stays on-topic, keeps the same protagonist throughout, and ends cleanly with `<|endoftext|>`, which is what I wanted from a small in-domain language model.
 
-Two main factors affect the output quality here. First, the checkpoint quality matters directly: this sample came from the TinyStories model trained to validation loss about `1.36`, so the model has already learned the dataset's short-story structure reasonably well. Second, decoding hyperparameters matter: I used nucleus sampling with `temperature=0.8` and `top_p=0.9`, which gave a good balance between diversity and stability. Lower temperature would likely make the output more repetitive, while higher temperature would make it less coherent. A third factor is the simplicity of the TinyStories domain itself: because the dataset contains short, formulaic children's stories, even a small model can generate text that sounds noticeably fluent in-domain.
+Two main factors affect the output quality here. First, checkpoint quality matters directly: this sample came from the final `batch_size=128`, `learning_rate=4e-3` TinyStories model, which reached validation loss `1.323`, so the model had already learned the dataset's short-story structure well. Second, decoding hyperparameters matter: I used nucleus sampling with `temperature=0.8` and `top_p=0.9`, which gave a good balance between diversity and stability. Lower temperature would likely make the output more repetitive, while higher temperature would make it less coherent. A third factor is the simplicity of the TinyStories domain itself: because the dataset contains short, formulaic children's stories, even a relatively small model can sound quite fluent in-domain.
 
 ---
 
