@@ -84,11 +84,6 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--device", type=str, default="cuda:0")
     parser.add_argument("--dtype", type=str, default="float32")
     parser.add_argument("--seed", type=int, default=42)
-    parser.add_argument(
-        "--disable-checkpoints",
-        action="store_true",
-        help="Skip writing best/latest checkpoint files during sweep runs.",
-    )
 
     parser.add_argument("--vocab-size", type=int, default=10000)
     parser.add_argument("--context-length", type=int, default=256)
@@ -198,7 +193,6 @@ def build_command(args: argparse.Namespace, *, learning_rate: float) -> list[str
         str(args.eval_batches),
         "--checkpoint-interval",
         str(args.checkpoint_interval),
-        "--disable-checkpoints" if args.disable_checkpoints else "",
         "--learning-rate",
         str(learning_rate),
         "--min-learning-rate",

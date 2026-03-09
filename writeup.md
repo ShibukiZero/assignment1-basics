@@ -420,6 +420,14 @@ Figure: Validation-loss curves for increasingly large learning rates. Higher lea
 
 **Answer:**
 
+I varied batch size from `1` up to the memory-limit region (`544`) and re-tuned the learning rate locally for each batch size using short 400-step pilots with the same model architecture and optimizer settings. The best learning rates increased monotonically with batch size: approximately `1.0e-3` for `bs=1`, `1.2e-3` for `bs=2/4/8`, `1.5e-3` for `bs=16`, `2.0e-3` for `bs=32`, `3.0e-3` for `bs=64`, `4.0e-3` for `bs=128`, `8.0e-3` for `bs=256`, `1.2e-2` for `bs=512`, and `1.0e-2` for `bs=544`.
+
+At a fixed 400-step pilot budget, validation loss improved steadily as batch size increased. The best validation losses were `2.194` at `bs=64`, `1.961` at `bs=128`, `1.792` at `bs=256`, `1.672` at `bs=512`, and `1.664` at `bs=544`. However, step time also increased substantially: about `0.255s/step` at `bs=128`, `0.492s/step` at `bs=256`, `0.985s/step` at `bs=512`, and `1.046s/step` at `bs=544`. In practice, `bs=128` is a good speed-oriented default, while `bs=256` is the best overall quality/throughput compromise on my hardware. `bs=512` and `bs=544` gave slightly better validation loss in the pilot, but their per-step cost was much higher.
+
+![Batch-size comparison](/Users/linzihan/Github/assignment1-basics/artifacts/experiments/logs_tracker/figures_batch_size_round2/val_loss_vs_step.png)
+
+Figure: Best validation-loss curve for each batch size after local LR retuning. Larger batch sizes achieve lower loss in the fixed-step pilot, but the runtime cost grows sharply beyond `bs=256`.
+
 ---
 
 ## Problem `generate`: Generate text (1 point)
@@ -430,7 +438,18 @@ Figure: Validation-loss curves for increasingly large learning rates. Higher lea
 
 **Generated text:**
 
+```text
+Once upon a time, there was a little girl named Lily. She lived in a small house with her mom, dad, and her dog, Spot. They loved to play with Lily, and they were always happy.
+One day, Lily and Spot were playing outside when Lily saw a big tree. She wanted to climb it, but she was scared. Spot barked and jumped, but he couldn't climb the tree. Lily was sad and did not know what to do.
+Then, a kind bird came and helped Lily. The bird said, "Don't be scared, I can help you." The bird flew up to the tree and helped Lily. Lily was so happy! She hugged Spot and said, "Thank you!" From that day on, Lily, Spot, and the bird played together every day.
+<|endoftext|>
+```
+
 **Commentary:**
+
+The sample is fluent and clearly matches the TinyStories style: it has simple vocabulary, short sentences, a coherent character setup, and a complete ending. The model maintains local consistency well (the same characters and setting remain present throughout), and it produces a plausible narrative arc rather than random sentence fragments.
+
+Two main factors affect the output quality here. First, the checkpoint quality matters directly: this sample came from the TinyStories model trained to validation loss about `1.36`, so the model has already learned the dataset's short-story structure reasonably well. Second, decoding hyperparameters matter: I used nucleus sampling with `temperature=0.8` and `top_p=0.9`, which gave a good balance between diversity and stability. Lower temperature would likely make the output more repetitive, while higher temperature would make it less coherent. A third factor is the simplicity of the TinyStories domain itself: because the dataset contains short, formulaic children's stories, even a small model can generate text that sounds noticeably fluent in-domain.
 
 ---
 
