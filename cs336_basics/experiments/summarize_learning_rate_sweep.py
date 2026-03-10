@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import math
 import re
 import shutil
 from dataclasses import dataclass
@@ -86,6 +87,12 @@ def geometric_midpoint(a: float, b: float) -> float:
     return (a * b) ** 0.5
 
 
+def format_loss(value: float) -> str:
+    if math.isfinite(value):
+        return f"{value:.6f}"
+    return "NaN"
+
+
 def persist_run_artifacts(result: RunResult, destination_root: Path) -> dict[str, str]:
     destination_dir = destination_root / result.run_name
     destination_dir.mkdir(parents=True, exist_ok=True)
@@ -144,13 +151,11 @@ def main() -> None:
     ]
     for result in results:
         lines.append(
-            f"| {result.learning_rate:.6g} | {result.best_val_loss:.6f} | "
+            f"| {result.learning_rate:.6g} | {format_loss(result.best_val_loss)} | "
             f"{result.best_val_step} | {result.final_step} | {result.total_wallclock_seconds:.2f} |"
         )
 
     if results:
-        best_result = min(results, key=lambda result: result.best_val_loss)
-        suggested = suggest_next_grid(results)
         persisted_rows = []
         for result in results:
             persisted = persist_run_artifacts(result, persisted_runs_root)
@@ -166,42 +171,59 @@ def main() -> None:
                     **persisted,
                 }
             )
-        lines.extend(
-            [
-                "",
-                "## Best LR",
-                "",
-                f"- Best LR: `{best_result.learning_rate:.6g}`",
-                f"- Best validation loss: `{best_result.best_val_loss:.6f}`",
-                f"- Suggested next LR grid: `{', '.join(f'{lr:.6g}' for lr in suggested)}`",
-            ]
-        )
-
-        payload = {
-            "best_learning_rate": best_result.learning_rate,
-            "best_val_loss": best_result.best_val_loss,
-            "best_run_name": best_result.run_name,
-            "summary_path": str(best_result.summary_path),
-            "suggested_next_grid": suggested,
-        }
-        best_persisted = next(
-            row for row in persisted_rows if row["run_name"] == best_result.run_name
-        )
-        payload.update(
-            {
-                "artifact_run_dir": best_persisted["artifact_run_dir"],
-                "artifact_metrics_path": best_persisted.get("artifact_metrics_jsonl"),
-                "artifact_summary_path": best_persisted.get("artifact_summary_json"),
-                "artifact_diagnostics_path": best_persisted.get("artifact_diagnostics_jsonl"),
-                "artifact_config_path": best_persisted.get("artifact_config_json"),
-            }
-        )
-        with (args.output_dir / "learning_rate_best_run.json").open("w", encoding="utf-8") as f:
-            json.dump(payload, f, indent=2)
-            f.write("\n")
         with (args.output_dir / "learning_rate_runs.json").open("w", encoding="utf-8") as f:
             json.dump(persisted_rows, f, indent=2)
             f.write("\n")
+
+        valid_results = [
+            result for result in results if math.isfinite(result.best_val_loss)
+        ]
+        if valid_results:
+            best_result = min(valid_results, key=lambda result: result.best_val_loss)
+            suggested = suggest_next_grid(valid_results)
+            lines.extend(
+                [
+                    "",
+                    "## Best LR",
+                    "",
+                    f"- Best LR: `{best_result.learning_rate:.6g}`",
+                    f"- Best validation loss: `{best_result.best_val_loss:.6f}`",
+                    f"- Suggested next LR grid: `{', '.join(f'{lr:.6g}' for lr in suggested)}`",
+                ]
+            )
+
+            payload = {
+                "best_learning_rate": best_result.learning_rate,
+                "best_val_loss": best_result.best_val_loss,
+                "best_run_name": best_result.run_name,
+                "summary_path": str(best_result.summary_path),
+                "suggested_next_grid": suggested,
+            }
+            best_persisted = next(
+                row for row in persisted_rows if row["run_name"] == best_result.run_name
+            )
+            payload.update(
+                {
+                    "artifact_run_dir": best_persisted["artifact_run_dir"],
+                    "artifact_metrics_path": best_persisted.get("artifact_metrics_jsonl"),
+                    "artifact_summary_path": best_persisted.get("artifact_summary_json"),
+                    "artifact_diagnostics_path": best_persisted.get("artifact_diagnostics_jsonl"),
+                    "artifact_config_path": best_persisted.get("artifact_config_json"),
+                }
+            )
+            with (args.output_dir / "learning_rate_best_run.json").open("w", encoding="utf-8") as f:
+                json.dump(payload, f, indent=2)
+                f.write("\n")
+        else:
+            lines.extend(
+                [
+                    "",
+                    "## Best LR",
+                    "",
+                    "- No finite validation losses were found in this sweep.",
+                    "- Suggested action: lower the learning-rate grid and rerun the coarse sweep.",
+                ]
+            )
 
     (args.output_dir / "learning_rate_sweep_summary.md").write_text(
         "\n".join(lines) + "\n",
