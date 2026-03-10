@@ -140,6 +140,10 @@ def build_model_from_config(config: dict, *, device: str | None) -> TransformerL
         num_heads=int(model_cfg["num_heads"]),
         d_ff=int(model_cfg["d_ff"]),
         rope_theta=float(model_cfg["rope_theta"]),
+        norm_style=str(model_cfg.get("norm_style", "pre")),
+        position_encoding=str(model_cfg.get("position_encoding", "rope")),
+        ffn_variant=str(model_cfg.get("ffn_variant", "swiglu")),
+        use_final_norm=bool(model_cfg.get("use_final_norm", True)),
         device=torch.device(resolved_device),
         dtype=resolve_dtype(str(config["dtype"])),
     )

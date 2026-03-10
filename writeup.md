@@ -438,6 +438,14 @@ Two main factors affect the output quality here. First, checkpoint quality matte
 
 **Answer:**
 
+I removed all RMSNorm layers from the writeup-facing TinyStories baseline, including the final RMSNorm before the LM head, and first retrained using the previous best hyperparameters from the current writeup configuration: `batch_size=128`, `learning_rate=4.0e-3`, `warmup_iters=200`, `beta1=0.9`, `beta2=0.999`, `eps=1e-8`, and `weight_decay=0.1`. Early training still made progress, with validation loss decreasing from `4.0035` at step `50` to `2.8888` at step `150`, but the run became numerically unstable shortly afterward. At step `200`, when the warmup schedule had raised the learning rate to about `3.98e-3`, both train and validation loss became `NaN`, and all later diagnostics (`grad_norm_pre_clip`, `grad_norm_post_clip`, and `param_norm`) also stayed `NaN`.
+
+This result shows that RMSNorm is doing important stabilization work in the baseline model. The previous optimal learning rate is too high once normalization is removed: training does not merely degrade, it actually becomes numerically unstable during warmup. In other words, the no-RMSNorm model appears to require a meaningfully smaller learning rate just to remain trainable, and even the pre-failure part of the curve is already worse than the normalized baseline at the same hardware-friendly `batch_size=128` setting. A lower-learning-rate search is therefore required for the second curve.
+
+![Layer norm ablation at previous optimal LR](artifacts/experiments/logs_tracker/figures/layer_norm_ablation_stage1/val_loss_vs_step.png)
+
+Figure: Removing all RMSNorm layers and keeping the previous optimal `batch_size=128`, `learning_rate=4e-3` configuration causes the TinyStories run to become `NaN` during warmup, showing that the old optimum is no longer stable without normalization.
+
 ---
 
 ## Problem `pre_norm_ablation`: Implement post-norm and train (1 point)

@@ -121,6 +121,29 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--num-heads", type=int, default=8)
     parser.add_argument("--d-ff", type=int, default=2048)
     parser.add_argument("--rope-theta", type=float, default=10_000.0)
+    parser.add_argument(
+        "--norm-style",
+        choices=["pre", "post", "none"],
+        default="pre",
+        help="Transformer block normalization layout.",
+    )
+    parser.add_argument(
+        "--position-encoding",
+        choices=["rope", "none"],
+        default="rope",
+        help="Position encoding variant used inside attention.",
+    )
+    parser.add_argument(
+        "--ffn-variant",
+        choices=["swiglu", "silu"],
+        default="swiglu",
+        help="Feed-forward variant used in each transformer block.",
+    )
+    parser.add_argument(
+        "--disable-final-norm",
+        action="store_true",
+        help="Skip the final RMSNorm before the LM head.",
+    )
 
     parser.add_argument("--batch-size", type=int, default=32)
     parser.add_argument("--max-steps", type=int, default=1_000)
@@ -250,6 +273,10 @@ def make_run_config(
             "num_heads": args.num_heads,
             "d_ff": args.d_ff,
             "rope_theta": args.rope_theta,
+            "norm_style": args.norm_style,
+            "position_encoding": args.position_encoding,
+            "ffn_variant": args.ffn_variant,
+            "use_final_norm": not args.disable_final_norm,
         },
         "optimization": {
             "batch_size": args.batch_size,
@@ -381,6 +408,10 @@ def main() -> None:
         num_heads=args.num_heads,
         d_ff=args.d_ff,
         rope_theta=args.rope_theta,
+        norm_style=args.norm_style,
+        position_encoding=args.position_encoding,
+        ffn_variant=args.ffn_variant,
+        use_final_norm=not args.disable_final_norm,
         device=torch.device(args.device),
         dtype=dtype,
     )
