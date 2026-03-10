@@ -4,147 +4,227 @@
     "best_learning_rate": 0.001,
     "best_val_loss": 3.8894660472869873,
     "suggested_next_grid": [
-      0.0008,
-      0.0008944271909999159,
+      0.0005,
+      0.0007071067811865475,
       0.001,
-      0.0010954451150103322,
-      0.0012
+      0.001414213562373095,
+      0.002
     ],
     "best_run_name": "tinystories_bs1_lr1p0e-03_pilot",
-    "summary_path": ".agents/logs/tinystories_bs1_lr1p0e-03_pilot/summary.json"
+    "summary_path": ".agents/logs/tinystories_bs1_lr1p0e-03_pilot/summary.json",
+    "artifact_run_dir": "artifacts/experiments/logs_tracker/results/batch_size_sweep_round2/runs/tinystories_bs1_lr1p0e-03_pilot",
+    "artifact_metrics_jsonl": "artifacts/experiments/logs_tracker/results/batch_size_sweep_round2/runs/tinystories_bs1_lr1p0e-03_pilot/metrics.jsonl",
+    "artifact_summary_json": "artifacts/experiments/logs_tracker/results/batch_size_sweep_round2/runs/tinystories_bs1_lr1p0e-03_pilot/summary.json",
+    "artifact_diagnostics_jsonl": "artifacts/experiments/logs_tracker/results/batch_size_sweep_round2/runs/tinystories_bs1_lr1p0e-03_pilot/diagnostics.jsonl",
+    "artifact_config_json": "artifacts/experiments/logs_tracker/results/batch_size_sweep_round2/runs/tinystories_bs1_lr1p0e-03_pilot/config.json",
+    "artifact_metrics_path": "artifacts/experiments/logs_tracker/results/batch_size_sweep_round2/runs/tinystories_bs1_lr1p0e-03_pilot/metrics.jsonl",
+    "artifact_summary_path": "artifacts/experiments/logs_tracker/results/batch_size_sweep_round2/runs/tinystories_bs1_lr1p0e-03_pilot/summary.json",
+    "artifact_diagnostics_path": "artifacts/experiments/logs_tracker/results/batch_size_sweep_round2/runs/tinystories_bs1_lr1p0e-03_pilot/diagnostics.jsonl",
+    "artifact_config_path": "artifacts/experiments/logs_tracker/results/batch_size_sweep_round2/runs/tinystories_bs1_lr1p0e-03_pilot/config.json"
   },
   {
     "batch_size": 2,
-    "best_learning_rate": 0.0012,
-    "best_val_loss": 3.5452423095703125,
+    "best_learning_rate": 0.001,
+    "best_val_loss": 3.5564465522766113,
     "suggested_next_grid": [
+      0.0005,
+      0.0007071067811865475,
       0.001,
-      0.0010954451150103322,
-      0.0012
+      0.001414213562373095,
+      0.002
     ],
-    "best_run_name": "tinystories_bs2_lr1p2e-03_pilot",
-    "summary_path": ".agents/logs/tinystories_bs2_lr1p2e-03_pilot/summary.json"
+    "best_run_name": "tinystories_bs2_lr1p0e-03_pilot",
+    "summary_path": ".agents/logs/tinystories_bs2_lr1p0e-03_pilot/summary.json",
+    "artifact_run_dir": "artifacts/experiments/logs_tracker/results/batch_size_sweep_round2/runs/tinystories_bs2_lr1p0e-03_pilot",
+    "artifact_metrics_jsonl": "artifacts/experiments/logs_tracker/results/batch_size_sweep_round2/runs/tinystories_bs2_lr1p0e-03_pilot/metrics.jsonl",
+    "artifact_summary_json": "artifacts/experiments/logs_tracker/results/batch_size_sweep_round2/runs/tinystories_bs2_lr1p0e-03_pilot/summary.json",
+    "artifact_diagnostics_jsonl": "artifacts/experiments/logs_tracker/results/batch_size_sweep_round2/runs/tinystories_bs2_lr1p0e-03_pilot/diagnostics.jsonl",
+    "artifact_config_json": "artifacts/experiments/logs_tracker/results/batch_size_sweep_round2/runs/tinystories_bs2_lr1p0e-03_pilot/config.json",
+    "artifact_metrics_path": "artifacts/experiments/logs_tracker/results/batch_size_sweep_round2/runs/tinystories_bs2_lr1p0e-03_pilot/metrics.jsonl",
+    "artifact_summary_path": "artifacts/experiments/logs_tracker/results/batch_size_sweep_round2/runs/tinystories_bs2_lr1p0e-03_pilot/summary.json",
+    "artifact_diagnostics_path": "artifacts/experiments/logs_tracker/results/batch_size_sweep_round2/runs/tinystories_bs2_lr1p0e-03_pilot/diagnostics.jsonl",
+    "artifact_config_path": "artifacts/experiments/logs_tracker/results/batch_size_sweep_round2/runs/tinystories_bs2_lr1p0e-03_pilot/config.json"
   },
   {
     "batch_size": 4,
     "best_learning_rate": 0.001,
     "best_val_loss": 3.3679325580596924,
     "suggested_next_grid": [
-      0.0008,
-      0.0008944271909999159,
+      0.0005,
+      0.0007071067811865475,
       0.001,
-      0.0010954451150103322,
-      0.0012
+      0.001414213562373095,
+      0.002
     ],
     "best_run_name": "tinystories_bs4_lr1p0e-03_pilot",
-    "summary_path": ".agents/logs/tinystories_bs4_lr1p0e-03_pilot/summary.json"
+    "summary_path": ".agents/logs/tinystories_bs4_lr1p0e-03_pilot/summary.json",
+    "artifact_run_dir": "artifacts/experiments/logs_tracker/results/batch_size_sweep_round2/runs/tinystories_bs4_lr1p0e-03_pilot",
+    "artifact_metrics_jsonl": "artifacts/experiments/logs_tracker/results/batch_size_sweep_round2/runs/tinystories_bs4_lr1p0e-03_pilot/metrics.jsonl",
+    "artifact_summary_json": "artifacts/experiments/logs_tracker/results/batch_size_sweep_round2/runs/tinystories_bs4_lr1p0e-03_pilot/summary.json",
+    "artifact_diagnostics_jsonl": "artifacts/experiments/logs_tracker/results/batch_size_sweep_round2/runs/tinystories_bs4_lr1p0e-03_pilot/diagnostics.jsonl",
+    "artifact_config_json": "artifacts/experiments/logs_tracker/results/batch_size_sweep_round2/runs/tinystories_bs4_lr1p0e-03_pilot/config.json",
+    "artifact_metrics_path": "artifacts/experiments/logs_tracker/results/batch_size_sweep_round2/runs/tinystories_bs4_lr1p0e-03_pilot/metrics.jsonl",
+    "artifact_summary_path": "artifacts/experiments/logs_tracker/results/batch_size_sweep_round2/runs/tinystories_bs4_lr1p0e-03_pilot/summary.json",
+    "artifact_diagnostics_path": "artifacts/experiments/logs_tracker/results/batch_size_sweep_round2/runs/tinystories_bs4_lr1p0e-03_pilot/diagnostics.jsonl",
+    "artifact_config_path": "artifacts/experiments/logs_tracker/results/batch_size_sweep_round2/runs/tinystories_bs4_lr1p0e-03_pilot/config.json"
   },
   {
     "batch_size": 8,
-    "best_learning_rate": 0.0012,
-    "best_val_loss": 3.0176854133605957,
+    "best_learning_rate": 0.001,
+    "best_val_loss": 3.02754282951355,
     "suggested_next_grid": [
+      0.0005,
+      0.0007071067811865475,
       0.001,
-      0.0010954451150103322,
-      0.0012
+      0.001414213562373095,
+      0.002
     ],
-    "best_run_name": "tinystories_bs8_lr1p2e-03_pilot",
-    "summary_path": ".agents/logs/tinystories_bs8_lr1p2e-03_pilot/summary.json"
+    "best_run_name": "tinystories_bs8_lr1p0e-03_pilot",
+    "summary_path": ".agents/logs/tinystories_bs8_lr1p0e-03_pilot/summary.json",
+    "artifact_run_dir": "artifacts/experiments/logs_tracker/results/batch_size_sweep_round2/runs/tinystories_bs8_lr1p0e-03_pilot",
+    "artifact_metrics_jsonl": "artifacts/experiments/logs_tracker/results/batch_size_sweep_round2/runs/tinystories_bs8_lr1p0e-03_pilot/metrics.jsonl",
+    "artifact_summary_json": "artifacts/experiments/logs_tracker/results/batch_size_sweep_round2/runs/tinystories_bs8_lr1p0e-03_pilot/summary.json",
+    "artifact_diagnostics_jsonl": "artifacts/experiments/logs_tracker/results/batch_size_sweep_round2/runs/tinystories_bs8_lr1p0e-03_pilot/diagnostics.jsonl",
+    "artifact_config_json": "artifacts/experiments/logs_tracker/results/batch_size_sweep_round2/runs/tinystories_bs8_lr1p0e-03_pilot/config.json",
+    "artifact_metrics_path": "artifacts/experiments/logs_tracker/results/batch_size_sweep_round2/runs/tinystories_bs8_lr1p0e-03_pilot/metrics.jsonl",
+    "artifact_summary_path": "artifacts/experiments/logs_tracker/results/batch_size_sweep_round2/runs/tinystories_bs8_lr1p0e-03_pilot/summary.json",
+    "artifact_diagnostics_path": "artifacts/experiments/logs_tracker/results/batch_size_sweep_round2/runs/tinystories_bs8_lr1p0e-03_pilot/diagnostics.jsonl",
+    "artifact_config_path": "artifacts/experiments/logs_tracker/results/batch_size_sweep_round2/runs/tinystories_bs8_lr1p0e-03_pilot/config.json"
   },
   {
     "batch_size": 16,
     "best_learning_rate": 0.0015,
     "best_val_loss": 2.6502938270568848,
     "suggested_next_grid": [
-      0.0013,
-      0.001396424004376894,
+      0.001,
+      0.0012247448713915891,
       0.0015,
-      0.0016431676725154984,
-      0.0018
+      0.0017320508075688774,
+      0.002
     ],
     "best_run_name": "tinystories_bs16_lr1p5e-03_pilot",
-    "summary_path": ".agents/logs/tinystories_bs16_lr1p5e-03_pilot/summary.json"
+    "summary_path": ".agents/logs/tinystories_bs16_lr1p5e-03_pilot/summary.json",
+    "artifact_run_dir": "artifacts/experiments/logs_tracker/results/batch_size_sweep_round2/runs/tinystories_bs16_lr1p5e-03_pilot",
+    "artifact_metrics_jsonl": "artifacts/experiments/logs_tracker/results/batch_size_sweep_round2/runs/tinystories_bs16_lr1p5e-03_pilot/metrics.jsonl",
+    "artifact_summary_json": "artifacts/experiments/logs_tracker/results/batch_size_sweep_round2/runs/tinystories_bs16_lr1p5e-03_pilot/summary.json",
+    "artifact_diagnostics_jsonl": "artifacts/experiments/logs_tracker/results/batch_size_sweep_round2/runs/tinystories_bs16_lr1p5e-03_pilot/diagnostics.jsonl",
+    "artifact_config_json": "artifacts/experiments/logs_tracker/results/batch_size_sweep_round2/runs/tinystories_bs16_lr1p5e-03_pilot/config.json",
+    "artifact_metrics_path": "artifacts/experiments/logs_tracker/results/batch_size_sweep_round2/runs/tinystories_bs16_lr1p5e-03_pilot/metrics.jsonl",
+    "artifact_summary_path": "artifacts/experiments/logs_tracker/results/batch_size_sweep_round2/runs/tinystories_bs16_lr1p5e-03_pilot/summary.json",
+    "artifact_diagnostics_path": "artifacts/experiments/logs_tracker/results/batch_size_sweep_round2/runs/tinystories_bs16_lr1p5e-03_pilot/diagnostics.jsonl",
+    "artifact_config_path": "artifacts/experiments/logs_tracker/results/batch_size_sweep_round2/runs/tinystories_bs16_lr1p5e-03_pilot/config.json"
   },
   {
     "batch_size": 32,
     "best_learning_rate": 0.002,
     "best_val_loss": 2.4376351833343506,
     "suggested_next_grid": [
-      0.0018,
-      0.0018973665961010276,
+      0.0015,
+      0.0017320508075688774,
       0.002,
-      0.002097617696340303,
-      0.0022
+      0.0021908902300206644,
+      0.0024
     ],
     "best_run_name": "tinystories_bs32_lr2p0e-03_pilot",
-    "summary_path": ".agents/logs/tinystories_bs32_lr2p0e-03_pilot/summary.json"
+    "summary_path": ".agents/logs/tinystories_bs32_lr2p0e-03_pilot/summary.json",
+    "artifact_run_dir": "artifacts/experiments/logs_tracker/results/batch_size_sweep_round2/runs/tinystories_bs32_lr2p0e-03_pilot",
+    "artifact_metrics_jsonl": "artifacts/experiments/logs_tracker/results/batch_size_sweep_round2/runs/tinystories_bs32_lr2p0e-03_pilot/metrics.jsonl",
+    "artifact_summary_json": "artifacts/experiments/logs_tracker/results/batch_size_sweep_round2/runs/tinystories_bs32_lr2p0e-03_pilot/summary.json",
+    "artifact_diagnostics_jsonl": "artifacts/experiments/logs_tracker/results/batch_size_sweep_round2/runs/tinystories_bs32_lr2p0e-03_pilot/diagnostics.jsonl",
+    "artifact_config_json": "artifacts/experiments/logs_tracker/results/batch_size_sweep_round2/runs/tinystories_bs32_lr2p0e-03_pilot/config.json",
+    "artifact_metrics_path": "artifacts/experiments/logs_tracker/results/batch_size_sweep_round2/runs/tinystories_bs32_lr2p0e-03_pilot/metrics.jsonl",
+    "artifact_summary_path": "artifacts/experiments/logs_tracker/results/batch_size_sweep_round2/runs/tinystories_bs32_lr2p0e-03_pilot/summary.json",
+    "artifact_diagnostics_path": "artifacts/experiments/logs_tracker/results/batch_size_sweep_round2/runs/tinystories_bs32_lr2p0e-03_pilot/diagnostics.jsonl",
+    "artifact_config_path": "artifacts/experiments/logs_tracker/results/batch_size_sweep_round2/runs/tinystories_bs32_lr2p0e-03_pilot/config.json"
   },
   {
     "batch_size": 64,
     "best_learning_rate": 0.003,
     "best_val_loss": 2.194028615951538,
     "suggested_next_grid": [
-      0.0028,
-      0.002898275349237888,
+      0.002,
+      0.0024494897427831783,
       0.003,
-      0.0030983866769659337,
-      0.0032
+      0.0034641016151377548,
+      0.004
     ],
     "best_run_name": "tinystories_bs64_lr3p0e-03_pilot",
-    "summary_path": ".agents/logs/tinystories_bs64_lr3p0e-03_pilot/summary.json"
+    "summary_path": ".agents/logs/tinystories_bs64_lr3p0e-03_pilot/summary.json",
+    "artifact_run_dir": "artifacts/experiments/logs_tracker/results/batch_size_sweep_round2/runs/tinystories_bs64_lr3p0e-03_pilot",
+    "artifact_metrics_jsonl": "artifacts/experiments/logs_tracker/results/batch_size_sweep_round2/runs/tinystories_bs64_lr3p0e-03_pilot/metrics.jsonl",
+    "artifact_summary_json": "artifacts/experiments/logs_tracker/results/batch_size_sweep_round2/runs/tinystories_bs64_lr3p0e-03_pilot/summary.json",
+    "artifact_diagnostics_jsonl": "artifacts/experiments/logs_tracker/results/batch_size_sweep_round2/runs/tinystories_bs64_lr3p0e-03_pilot/diagnostics.jsonl",
+    "artifact_config_json": "artifacts/experiments/logs_tracker/results/batch_size_sweep_round2/runs/tinystories_bs64_lr3p0e-03_pilot/config.json",
+    "artifact_metrics_path": "artifacts/experiments/logs_tracker/results/batch_size_sweep_round2/runs/tinystories_bs64_lr3p0e-03_pilot/metrics.jsonl",
+    "artifact_summary_path": "artifacts/experiments/logs_tracker/results/batch_size_sweep_round2/runs/tinystories_bs64_lr3p0e-03_pilot/summary.json",
+    "artifact_diagnostics_path": "artifacts/experiments/logs_tracker/results/batch_size_sweep_round2/runs/tinystories_bs64_lr3p0e-03_pilot/diagnostics.jsonl",
+    "artifact_config_path": "artifacts/experiments/logs_tracker/results/batch_size_sweep_round2/runs/tinystories_bs64_lr3p0e-03_pilot/config.json"
   },
   {
     "batch_size": 128,
     "best_learning_rate": 0.004,
     "best_val_loss": 1.9611880779266357,
     "suggested_next_grid": [
-      0.0038,
-      0.0038987177379235854,
+      0.002,
+      0.00282842712474619,
       0.004,
-      0.004098780306383839,
-      0.0042
+      0.004898979485566357,
+      0.006
     ],
     "best_run_name": "tinystories_bs128_lr4p0e-03_pilot",
-    "summary_path": ".agents/logs/tinystories_bs128_lr4p0e-03_pilot/summary.json"
+    "summary_path": ".agents/logs/tinystories_bs128_lr4p0e-03_pilot/summary.json",
+    "artifact_run_dir": "artifacts/experiments/logs_tracker/results/batch_size_sweep_round2/runs/tinystories_bs128_lr4p0e-03_pilot",
+    "artifact_metrics_jsonl": "artifacts/experiments/logs_tracker/results/batch_size_sweep_round2/runs/tinystories_bs128_lr4p0e-03_pilot/metrics.jsonl",
+    "artifact_summary_json": "artifacts/experiments/logs_tracker/results/batch_size_sweep_round2/runs/tinystories_bs128_lr4p0e-03_pilot/summary.json",
+    "artifact_diagnostics_jsonl": "artifacts/experiments/logs_tracker/results/batch_size_sweep_round2/runs/tinystories_bs128_lr4p0e-03_pilot/diagnostics.jsonl",
+    "artifact_config_json": "artifacts/experiments/logs_tracker/results/batch_size_sweep_round2/runs/tinystories_bs128_lr4p0e-03_pilot/config.json",
+    "artifact_metrics_path": "artifacts/experiments/logs_tracker/results/batch_size_sweep_round2/runs/tinystories_bs128_lr4p0e-03_pilot/metrics.jsonl",
+    "artifact_summary_path": "artifacts/experiments/logs_tracker/results/batch_size_sweep_round2/runs/tinystories_bs128_lr4p0e-03_pilot/summary.json",
+    "artifact_diagnostics_path": "artifacts/experiments/logs_tracker/results/batch_size_sweep_round2/runs/tinystories_bs128_lr4p0e-03_pilot/diagnostics.jsonl",
+    "artifact_config_path": "artifacts/experiments/logs_tracker/results/batch_size_sweep_round2/runs/tinystories_bs128_lr4p0e-03_pilot/config.json"
   },
   {
     "batch_size": 256,
     "best_learning_rate": 0.008,
     "best_val_loss": 1.7921687364578247,
     "suggested_next_grid": [
-      0.0076,
-      0.007797435475847171,
+      0.006,
+      0.0069282032302755096,
       0.008,
-      0.008197560612767678,
-      0.0084
+      0.00894427190999916,
+      0.01
     ],
     "best_run_name": "tinystories_bs256_lr8p0e-03_pilot",
-    "summary_path": ".agents/logs/tinystories_bs256_lr8p0e-03_pilot/summary.json"
+    "summary_path": ".agents/logs/tinystories_bs256_lr8p0e-03_pilot/summary.json",
+    "artifact_run_dir": "artifacts/experiments/logs_tracker/results/batch_size_sweep_round2/runs/tinystories_bs256_lr8p0e-03_pilot",
+    "artifact_metrics_jsonl": "artifacts/experiments/logs_tracker/results/batch_size_sweep_round2/runs/tinystories_bs256_lr8p0e-03_pilot/metrics.jsonl",
+    "artifact_summary_json": "artifacts/experiments/logs_tracker/results/batch_size_sweep_round2/runs/tinystories_bs256_lr8p0e-03_pilot/summary.json",
+    "artifact_diagnostics_jsonl": "artifacts/experiments/logs_tracker/results/batch_size_sweep_round2/runs/tinystories_bs256_lr8p0e-03_pilot/diagnostics.jsonl",
+    "artifact_config_json": "artifacts/experiments/logs_tracker/results/batch_size_sweep_round2/runs/tinystories_bs256_lr8p0e-03_pilot/config.json",
+    "artifact_metrics_path": "artifacts/experiments/logs_tracker/results/batch_size_sweep_round2/runs/tinystories_bs256_lr8p0e-03_pilot/metrics.jsonl",
+    "artifact_summary_path": "artifacts/experiments/logs_tracker/results/batch_size_sweep_round2/runs/tinystories_bs256_lr8p0e-03_pilot/summary.json",
+    "artifact_diagnostics_path": "artifacts/experiments/logs_tracker/results/batch_size_sweep_round2/runs/tinystories_bs256_lr8p0e-03_pilot/diagnostics.jsonl",
+    "artifact_config_path": "artifacts/experiments/logs_tracker/results/batch_size_sweep_round2/runs/tinystories_bs256_lr8p0e-03_pilot/config.json"
   },
   {
     "batch_size": 512,
-    "best_learning_rate": 0.012,
-    "best_val_loss": 1.6722993850708008,
+    "best_learning_rate": 0.006,
+    "best_val_loss": 1.6886950731277466,
     "suggested_next_grid": [
-      0.01,
-      0.010954451150103323,
-      0.012,
-      0.012961481396815721,
-      0.014
+      0.004,
+      0.004898979485566357,
+      0.006
     ],
-    "best_run_name": "tinystories_bs512_lr1p2e-02_pilot",
-    "summary_path": ".agents/logs/tinystories_bs512_lr1p2e-02_pilot/summary.json"
-  },
-  {
-    "batch_size": 544,
-    "best_learning_rate": 0.01,
-    "best_val_loss": 1.6639137268066406,
-    "suggested_next_grid": [
-      0.01,
-      0.010954451150103323,
-      0.012
-    ],
-    "best_run_name": "tinystories_bs544_lr1p0e-02_pilot",
-    "summary_path": ".agents/logs/tinystories_bs544_lr1p0e-02_pilot/summary.json"
+    "best_run_name": "tinystories_bs512_lr6p0e-03_pilot",
+    "summary_path": ".agents/logs/tinystories_bs512_lr6p0e-03_pilot/summary.json",
+    "artifact_run_dir": "artifacts/experiments/logs_tracker/results/batch_size_sweep_round2/runs/tinystories_bs512_lr6p0e-03_pilot",
+    "artifact_metrics_jsonl": "artifacts/experiments/logs_tracker/results/batch_size_sweep_round2/runs/tinystories_bs512_lr6p0e-03_pilot/metrics.jsonl",
+    "artifact_summary_json": "artifacts/experiments/logs_tracker/results/batch_size_sweep_round2/runs/tinystories_bs512_lr6p0e-03_pilot/summary.json",
+    "artifact_diagnostics_jsonl": "artifacts/experiments/logs_tracker/results/batch_size_sweep_round2/runs/tinystories_bs512_lr6p0e-03_pilot/diagnostics.jsonl",
+    "artifact_config_json": "artifacts/experiments/logs_tracker/results/batch_size_sweep_round2/runs/tinystories_bs512_lr6p0e-03_pilot/config.json",
+    "artifact_metrics_path": "artifacts/experiments/logs_tracker/results/batch_size_sweep_round2/runs/tinystories_bs512_lr6p0e-03_pilot/metrics.jsonl",
+    "artifact_summary_path": "artifacts/experiments/logs_tracker/results/batch_size_sweep_round2/runs/tinystories_bs512_lr6p0e-03_pilot/summary.json",
+    "artifact_diagnostics_path": "artifacts/experiments/logs_tracker/results/batch_size_sweep_round2/runs/tinystories_bs512_lr6p0e-03_pilot/diagnostics.jsonl",
+    "artifact_config_path": "artifacts/experiments/logs_tracker/results/batch_size_sweep_round2/runs/tinystories_bs512_lr6p0e-03_pilot/config.json"
   }
 ]
