@@ -457,6 +457,14 @@ Figure: Without RMSNorm, the previous optimal `learning_rate=4e-3` becomes unsta
 
 **Answer:**
 
+Starting from the same fixed TinyStories training setup used in the other architecture ablations (`batch_size=128`, `learning_rate=4e-3`, `warmup_iters=200`, `cosine_cycle_iters=10000`, `max_steps=5000`), I replaced the standard pre-norm Transformer blocks with post-norm ones and kept all other settings unchanged. Both the matched-horizon pre-norm baseline and the post-norm model trained stably for the full `5000` steps, so unlike the no-RMSNorm ablation, this change did not cause numerical failure under the baseline optimizer settings.
+
+However, post-norm converged noticeably worse than pre-norm. The matched-horizon pre-norm control reached validation loss `1.4656` at step `5000`, while the post-norm run only reached `1.5422` at the same step, a degradation of about `0.0766` validation-loss points. This indicates that even when post-norm remains trainable, pre-norm is still the better optimization choice for this model and budget: it gives consistently faster and better convergence.
+
+![Pre-norm vs. post-norm](artifacts/experiments/logs_tracker/figures/arch_ablation_suite_bs128_5k/pre_norm_ablation/val_loss_vs_step.png)
+
+Figure: Under the same TinyStories training hyperparameters, pre-norm converges better than post-norm over `5000` steps.
+
 ---
 
 ## Problem `no_pos_emb`: Implement NoPE (1 point)
@@ -466,6 +474,14 @@ Figure: Without RMSNorm, the previous optimal `learning_rate=4e-3` becomes unsta
 
 **Answer:**
 
+I next removed RoPE entirely and trained the resulting NoPE model with the same fixed hyperparameters as the matched-horizon baseline. The model remained trainable and continued improving throughout the `5000`-step run, which is consistent with the idea that a causal decoder can infer some positional structure even without explicit positional embeddings.
+
+Even so, removing positional information clearly hurt performance. The RoPE baseline reached validation loss `1.4656` at step `5000`, whereas the NoPE model reached only `1.5676`, a gap of about `0.1020`. Among the three architecture ablations in this matched-horizon suite, NoPE was the worst. So while explicit positional embeddings are not strictly required for learning to proceed, they are still very important for good sample efficiency and final quality on this task.
+
+![RoPE vs. NoPE](artifacts/experiments/logs_tracker/figures/arch_ablation_suite_bs128_5k/no_pos_emb/val_loss_vs_step.png)
+
+Figure: Removing RoPE does not prevent learning, but the NoPE model converges substantially worse than the RoPE baseline.
+
 ---
 
 ## Problem `swiglu_ablation`: SwiGLU vs. SiLU (1 point)
@@ -474,6 +490,14 @@ Figure: Without RMSNorm, the previous optimal `learning_rate=4e-3` becomes unsta
 **Deliverable:** Learning curve comparison.
 
 **Answer:**
+
+For this ablation I replaced SwiGLU with a plain SiLU feed-forward network, while increasing the inner feed-forward width to `d_ff = 4 * d_model = 2048` to approximately match parameter count, as requested in the handout. All optimizer and training hyperparameters were otherwise kept fixed to the same matched-horizon TinyStories baseline used above.
+
+This change produced the smallest degradation of the three ablations. The SwiGLU baseline reached validation loss `1.4656` at step `5000`, while the SiLU model reached `1.4781`, only about `0.0125` worse. So gating does help, and SwiGLU is still the better choice, but on this model scale and budget the advantage is modest compared with the much larger effects of normalization placement or removing positional information.
+
+![SwiGLU vs. SiLU](artifacts/experiments/logs_tracker/figures/arch_ablation_suite_bs128_5k/swiglu_ablation/val_loss_vs_step.png)
+
+Figure: SwiGLU converges slightly better than a parameter-matched SiLU feed-forward network, but the gap is much smaller than in the post-norm or NoPE ablations.
 
 ---
 
