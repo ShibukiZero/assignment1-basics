@@ -1,0 +1,9 @@
+{
+  "best_checkpoint": null,
+  "best_val_loss": 5.228240013122559,
+  "best_val_step": 400,
+  "final_step": 400,
+  "latest_checkpoint": null,
+  "run_name": "owt_bs128_lr_refined_lr2p5e-03",
+  "total_wallclock_seconds": 146.61479556560516
+}
