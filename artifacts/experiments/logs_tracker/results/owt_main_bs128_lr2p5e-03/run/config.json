@@ -1,0 +1,46 @@
+{
+  "created_at_utc": "2026-03-11T14:10:48.075279+00:00",
+  "device": "cuda:0",
+  "dtype": "float32",
+  "log_dir": ".agents/logs/owt_main_bs128_lr2p5e-03",
+  "model": {
+    "context_length": 256,
+    "d_ff": 1344,
+    "d_model": 512,
+    "ffn_variant": "swiglu",
+    "norm_style": "pre",
+    "num_heads": 16,
+    "num_layers": 4,
+    "position_encoding": "rope",
+    "rope_theta": 10000.0,
+    "use_final_norm": true,
+    "vocab_size": 32000
+  },
+  "optimization": {
+    "batch_size": 128,
+    "betas": [
+      0.9,
+      0.999
+    ],
+    "checkpoint_interval": 1000,
+    "cosine_cycle_iters": 10000,
+    "disable_checkpoints": false,
+    "eps": 1e-08,
+    "eval_batches": 8,
+    "eval_interval": 200,
+    "grad_clip": 1.0,
+    "learning_rate": 0.0025,
+    "max_steps": 10000,
+    "min_learning_rate": 0.00025,
+    "warmup_iters": 200,
+    "weight_decay": 0.1
+  },
+  "output_dir": "/root/autodl-tmp/training_runs/owt_main_bs128_lr2p5e-03",
+  "resume_from": null,
+  "run_name": "owt_main_bs128_lr2p5e-03",
+  "seed": 42,
+  "tensorboard_dir": "/root/tf-logs/owt_main_bs128_lr2p5e-03",
+  "tensorboard_enabled": true,
+  "train_npy": "/root/autodl-tmp/tokenizer_exp_encoded/owt_train_ids.npy",
+  "val_npy": "/root/autodl-tmp/tokenizer_exp_encoded/owt_valid_ids.npy"
+}

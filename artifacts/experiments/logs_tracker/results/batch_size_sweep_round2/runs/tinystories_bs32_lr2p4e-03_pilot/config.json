@@ -1,0 +1,42 @@
+{
+  "created_at_utc": "2026-03-09T17:07:21.818253+00:00",
+  "device": "cuda:0",
+  "dtype": "float32",
+  "log_dir": ".agents/logs/tinystories_bs32_lr2p4e-03_pilot",
+  "model": {
+    "context_length": 256,
+    "d_ff": 1344,
+    "d_model": 512,
+    "num_heads": 16,
+    "num_layers": 4,
+    "rope_theta": 10000.0,
+    "vocab_size": 10000
+  },
+  "optimization": {
+    "batch_size": 32,
+    "betas": [
+      0.9,
+      0.999
+    ],
+    "checkpoint_interval": 400,
+    "cosine_cycle_iters": 400,
+    "disable_checkpoints": true,
+    "eps": 1e-08,
+    "eval_batches": 8,
+    "eval_interval": 50,
+    "grad_clip": 1.0,
+    "learning_rate": 0.0024,
+    "max_steps": 400,
+    "min_learning_rate": 0.00023999999999999998,
+    "warmup_iters": 200,
+    "weight_decay": 0.1
+  },
+  "output_dir": "/root/autodl-tmp/training_runs/tinystories_bs32_lr2p4e-03_pilot",
+  "resume_from": null,
+  "run_name": "tinystories_bs32_lr2p4e-03_pilot",
+  "seed": 42,
+  "tensorboard_dir": "/root/tf-logs/tinystories_bs32_lr2p4e-03_pilot",
+  "tensorboard_enabled": false,
+  "train_npy": "/root/autodl-tmp/tokenizer_exp_encoded/tiny_train_ids.npy",
+  "val_npy": "/root/autodl-tmp/tokenizer_exp_encoded/tiny_valid_ids.npy"
+}

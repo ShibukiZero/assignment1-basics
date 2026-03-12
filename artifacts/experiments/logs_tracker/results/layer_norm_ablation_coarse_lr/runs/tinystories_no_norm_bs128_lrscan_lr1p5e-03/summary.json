@@ -1,0 +1,9 @@
+{
+  "best_checkpoint": null,
+  "best_val_loss": 2.0855088233947754,
+  "best_val_step": 550,
+  "final_step": 1000,
+  "latest_checkpoint": null,
+  "run_name": "tinystories_no_norm_bs128_lrscan_lr1p5e-03",
+  "total_wallclock_seconds": 239.8928501084447
+}

@@ -134,6 +134,21 @@ class RMSNorm(nn.Module):
         return normalized.to(dtype=in_dtype)
 
 
+class IdentityNorm(nn.Module):
+    """No-op normalization used for architecture ablations."""
+
+    def __init__(self, d_model: int) -> None:
+        super().__init__()
+        self.d_model = d_model
+
+    def forward(self, x: Tensor) -> Tensor:
+        if x.shape[-1] != self.d_model:
+            raise ValueError(
+                f"Expected x.shape[-1] == {self.d_model}, got {x.shape[-1]}."
+            )
+        return x
+
+
 def silu(in_features: Tensor) -> Tensor:
     """
     Elementwise SiLU activation.
@@ -184,6 +199,34 @@ class SwiGLU(nn.Module):
         activated: Float[Tensor, "... d_ff"] = silu(up)
         gated: Float[Tensor, "... d_ff"] = activated * gate
         out_features: Float[Tensor, "... d_model"] = self.w2(gated)
+        return out_features
+
+
+class SiLUFeedForward(nn.Module):
+    """Non-gated SiLU feed-forward layer used for Chapter 7 ablations."""
+
+    def __init__(
+        self,
+        d_model: int,
+        d_ff: int,
+        device: torch.device | None = None,
+        dtype: torch.dtype | None = None,
+    ) -> None:
+        super().__init__()
+        self.d_model = d_model
+        self.d_ff = d_ff
+        self.w1 = Linear(d_model, d_ff, device=device, dtype=dtype)
+        self.w2 = Linear(d_ff, d_model, device=device, dtype=dtype)
+
+    def forward(self, in_features: Tensor) -> Tensor:
+        if in_features.shape[-1] != self.d_model:
+            raise ValueError(
+                f"Expected in_features.shape[-1] == {self.d_model}, got {in_features.shape[-1]}."
+            )
+
+        hidden: Float[Tensor, "... d_ff"] = self.w1(in_features)
+        activated: Float[Tensor, "... d_ff"] = silu(hidden)
+        out_features: Float[Tensor, "... d_model"] = self.w2(activated)
         return out_features
 
 
@@ -467,32 +510,64 @@ class TransformerBlock(nn.Module):
         d_ff: int,
         max_seq_len: int,
         theta: float,
+        norm_style: str = "pre",
+        position_encoding: str = "rope",
+        ffn_variant: str = "swiglu",
         device: torch.device | None = None,
         dtype: torch.dtype | None = None,
     ) -> None:
         super().__init__()
+        if norm_style not in {"pre", "post", "none"}:
+            raise ValueError(
+                f"Expected norm_style in {{'pre', 'post', 'none'}}, got {norm_style}."
+            )
+        if position_encoding not in {"rope", "none"}:
+            raise ValueError(
+                "Expected position_encoding in {'rope', 'none'}, "
+                f"got {position_encoding}."
+            )
+        if ffn_variant not in {"swiglu", "silu"}:
+            raise ValueError(
+                f"Expected ffn_variant in {{'swiglu', 'silu'}}, got {ffn_variant}."
+            )
+
         self.d_model = d_model
         self.num_heads = num_heads
         self.d_ff = d_ff
         self.max_seq_len = max_seq_len
         self.theta = theta
+        self.norm_style = norm_style
+        self.position_encoding = position_encoding
+        self.ffn_variant = ffn_variant
 
-        self.ln1 = RMSNorm(d_model, device=device, dtype=dtype)
+        if norm_style == "none":
+            self.ln1: nn.Module = IdentityNorm(d_model)
+            self.ln2: nn.Module = IdentityNorm(d_model)
+        else:
+            self.ln1 = RMSNorm(d_model, device=device, dtype=dtype)
+            self.ln2 = RMSNorm(d_model, device=device, dtype=dtype)
         self.attn = CausalMultiHeadSelfAttention(
             d_model=d_model,
             num_heads=num_heads,
-            max_seq_len=max_seq_len,
-            theta=theta,
+            max_seq_len=max_seq_len if position_encoding == "rope" else None,
+            theta=theta if position_encoding == "rope" else None,
             device=device,
             dtype=dtype,
         )
-        self.ln2 = RMSNorm(d_model, device=device, dtype=dtype)
-        self.ffn = SwiGLU(
-            d_model=d_model,
-            d_ff=d_ff,
-            device=device,
-            dtype=dtype,
-        )
+        if ffn_variant == "swiglu":
+            self.ffn: nn.Module = SwiGLU(
+                d_model=d_model,
+                d_ff=d_ff,
+                device=device,
+                dtype=dtype,
+            )
+        else:
+            self.ffn = SiLUFeedForward(
+                d_model=d_model,
+                d_ff=d_ff,
+                device=device,
+                dtype=dtype,
+            )
 
     def forward(
         self,
@@ -511,7 +586,7 @@ class TransformerBlock(nn.Module):
             raise ValueError(
                 f"Expected in_features.shape[-1] == {self.d_model}, got {in_features.shape[-1]}."
             )
-        if token_positions is None:
+        if self.position_encoding == "rope" and token_positions is None:
             token_positions = torch.arange(
                 in_features.shape[-2],
                 device=in_features.device,
@@ -520,25 +595,42 @@ class TransformerBlock(nn.Module):
             token_positions = rearrange(token_positions, "sequence_length -> 1 sequence_length")
             token_positions = token_positions.expand(in_features.shape[0], -1)
 
-        normed_attn_in: Float[Tensor, "batch_size sequence_length d_model"] = self.ln1(
-            in_features
-        )
-        attn_out: Float[Tensor, "batch_size sequence_length d_model"] = self.attn(
-            normed_attn_in,
-            token_positions=token_positions,
-        )
-        residual_attn: Float[Tensor, "batch_size sequence_length d_model"] = (
-            in_features + attn_out
-        )
-        normed_ffn_in: Float[Tensor, "batch_size sequence_length d_model"] = self.ln2(
-            residual_attn
-        )
-        ffn_out: Float[Tensor, "batch_size sequence_length d_model"] = self.ffn(
-            normed_ffn_in
-        )
-        out_features: Float[Tensor, "batch_size sequence_length d_model"] = (
-            residual_attn + ffn_out
-        )
+        if self.norm_style == "pre":
+            normed_attn_in: Float[Tensor, "batch_size sequence_length d_model"] = self.ln1(
+                in_features
+            )
+            attn_out: Float[Tensor, "batch_size sequence_length d_model"] = self.attn(
+                normed_attn_in,
+                token_positions=token_positions,
+            )
+            residual_attn: Float[Tensor, "batch_size sequence_length d_model"] = (
+                in_features + attn_out
+            )
+            normed_ffn_in: Float[Tensor, "batch_size sequence_length d_model"] = self.ln2(
+                residual_attn
+            )
+            ffn_out: Float[Tensor, "batch_size sequence_length d_model"] = self.ffn(
+                normed_ffn_in
+            )
+            out_features: Float[Tensor, "batch_size sequence_length d_model"] = (
+                residual_attn + ffn_out
+            )
+        elif self.norm_style == "post":
+            attn_out = self.attn(
+                in_features,
+                token_positions=token_positions,
+            )
+            residual_attn = self.ln1(in_features + attn_out)
+            ffn_out = self.ffn(residual_attn)
+            out_features = self.ln2(residual_attn + ffn_out)
+        else:
+            attn_out = self.attn(
+                in_features,
+                token_positions=token_positions,
+            )
+            residual_attn = in_features + attn_out
+            ffn_out = self.ffn(residual_attn)
+            out_features = residual_attn + ffn_out
         return out_features.to(dtype=in_features.dtype)
 
 
@@ -554,10 +646,28 @@ class TransformerLM(nn.Module):
         num_heads: int,
         d_ff: int,
         rope_theta: float,
+        norm_style: str = "pre",
+        position_encoding: str = "rope",
+        ffn_variant: str = "swiglu",
+        use_final_norm: bool = True,
         device: torch.device | None = None,
         dtype: torch.dtype | None = None,
     ) -> None:
         super().__init__()
+        if norm_style not in {"pre", "post", "none"}:
+            raise ValueError(
+                f"Expected norm_style in {{'pre', 'post', 'none'}}, got {norm_style}."
+            )
+        if position_encoding not in {"rope", "none"}:
+            raise ValueError(
+                "Expected position_encoding in {'rope', 'none'}, "
+                f"got {position_encoding}."
+            )
+        if ffn_variant not in {"swiglu", "silu"}:
+            raise ValueError(
+                f"Expected ffn_variant in {{'swiglu', 'silu'}}, got {ffn_variant}."
+            )
+
         self.vocab_size = vocab_size
         self.context_length = context_length
         self.d_model = d_model
@@ -565,6 +675,10 @@ class TransformerLM(nn.Module):
         self.num_heads = num_heads
         self.d_ff = d_ff
         self.rope_theta = rope_theta
+        self.norm_style = norm_style
+        self.position_encoding = position_encoding
+        self.ffn_variant = ffn_variant
+        self.use_final_norm = use_final_norm
 
         self.token_embeddings = Embedding(
             num_embeddings=vocab_size,
@@ -580,13 +694,19 @@ class TransformerLM(nn.Module):
                     d_ff=d_ff,
                     max_seq_len=context_length,
                     theta=rope_theta,
+                    norm_style=norm_style,
+                    position_encoding=position_encoding,
+                    ffn_variant=ffn_variant,
                     device=device,
                     dtype=dtype,
                 )
                 for _ in range(num_layers)
             ]
         )
-        self.ln_final = RMSNorm(d_model, device=device, dtype=dtype)
+        if use_final_norm:
+            self.ln_final: nn.Module = RMSNorm(d_model, device=device, dtype=dtype)
+        else:
+            self.ln_final = IdentityNorm(d_model)
         self.lm_head = Linear(d_model, vocab_size, device=device, dtype=dtype)
 
     def forward(
@@ -605,13 +725,15 @@ class TransformerLM(nn.Module):
                 f"Expected sequence length <= {self.context_length}, got {in_indices.shape[-1]}."
             )
 
-        token_positions: Int[Tensor, "batch_size sequence_length"] = torch.arange(
-            in_indices.shape[-1],
-            device=in_indices.device,
-            dtype=torch.int64,
-        )
-        token_positions = rearrange(token_positions, "sequence_length -> 1 sequence_length")
-        token_positions = token_positions.expand(in_indices.shape[0], -1)
+        token_positions: Int[Tensor, "batch_size sequence_length"] | None = None
+        if self.position_encoding == "rope":
+            token_positions = torch.arange(
+                in_indices.shape[-1],
+                device=in_indices.device,
+                dtype=torch.int64,
+            )
+            token_positions = rearrange(token_positions, "sequence_length -> 1 sequence_length")
+            token_positions = token_positions.expand(in_indices.shape[0], -1)
 
         hidden_states: Float[Tensor, "batch_size sequence_length d_model"] = (
             self.token_embeddings(in_indices)

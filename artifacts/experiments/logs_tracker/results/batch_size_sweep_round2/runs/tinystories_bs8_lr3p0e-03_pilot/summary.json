@@ -1,0 +1,9 @@
+{
+  "best_checkpoint": null,
+  "best_val_loss": 3.14532470703125,
+  "best_val_step": 400,
+  "final_step": 400,
+  "latest_checkpoint": null,
+  "run_name": "tinystories_bs8_lr3p0e-03_pilot",
+  "total_wallclock_seconds": 12.659390423446894
+}

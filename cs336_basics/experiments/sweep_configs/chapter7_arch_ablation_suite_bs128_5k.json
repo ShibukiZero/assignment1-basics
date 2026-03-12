@@ -1,0 +1,40 @@
+{
+  "experiments": [
+    {
+      "name": "baseline",
+      "run_name": "tinystories_ablation_baseline_bs128_5k",
+      "norm_style": "pre",
+      "position_encoding": "rope",
+      "ffn_variant": "swiglu",
+      "use_final_norm": true,
+      "d_ff": 1344
+    },
+    {
+      "name": "post_norm",
+      "run_name": "tinystories_ablation_post_norm_bs128_5k",
+      "norm_style": "post",
+      "position_encoding": "rope",
+      "ffn_variant": "swiglu",
+      "use_final_norm": true,
+      "d_ff": 1344
+    },
+    {
+      "name": "nope",
+      "run_name": "tinystories_ablation_nope_bs128_5k",
+      "norm_style": "pre",
+      "position_encoding": "none",
+      "ffn_variant": "swiglu",
+      "use_final_norm": true,
+      "d_ff": 1344
+    },
+    {
+      "name": "silu",
+      "run_name": "tinystories_ablation_silu_bs128_5k",
+      "norm_style": "pre",
+      "position_encoding": "rope",
+      "ffn_variant": "silu",
+      "use_final_norm": true,
+      "d_ff": 2048
+    }
+  ]
+}

@@ -1,0 +1,9 @@
+{
+  "best_checkpoint": "/root/autodl-tmp/training_runs/owt_main_bs128_lr2p5e-03/best_checkpoint.pt",
+  "best_val_loss": 3.8886148929595947,
+  "best_val_step": 10000,
+  "final_step": 10000,
+  "latest_checkpoint": "/root/autodl-tmp/training_runs/owt_main_bs128_lr2p5e-03/latest_checkpoint.pt",
+  "run_name": "owt_main_bs128_lr2p5e-03",
+  "total_wallclock_seconds": 3470.4602377787232
+}

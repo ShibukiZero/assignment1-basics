@@ -1,0 +1,28 @@
+{
+  "comparisons": [
+    {
+      "name": "pre_norm_ablation",
+      "title": "Pre-norm vs post-norm on TinyStories",
+      "baseline_label": "pre-norm baseline",
+      "baseline_run_name": "tinystories_ablation_baseline_bs128_5k",
+      "ablation_label": "post-norm",
+      "ablation_run_name": "tinystories_ablation_post_norm_bs128_5k"
+    },
+    {
+      "name": "no_pos_emb",
+      "title": "RoPE vs NoPE on TinyStories",
+      "baseline_label": "RoPE baseline",
+      "baseline_run_name": "tinystories_ablation_baseline_bs128_5k",
+      "ablation_label": "NoPE",
+      "ablation_run_name": "tinystories_ablation_nope_bs128_5k"
+    },
+    {
+      "name": "swiglu_ablation",
+      "title": "SwiGLU vs SiLU on TinyStories",
+      "baseline_label": "SwiGLU baseline",
+      "baseline_run_name": "tinystories_ablation_baseline_bs128_5k",
+      "ablation_label": "SiLU",
+      "ablation_run_name": "tinystories_ablation_silu_bs128_5k"
+    }
+  ]
+}
