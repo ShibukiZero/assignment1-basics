@@ -27,9 +27,10 @@ Current durable result sets:
 - `results/owt_main_bs128_lr2p5e-03/`: writeup-facing OpenWebText main run summary and copied run artifacts
 
 Current writeup-facing figures:
+- `figures/arch_ablation_suite_bs128_5k/`
 - `figures/bs128_learning_rate/`
 - `figures/batch_size_round2/`
-- `figures/layer_norm_ablation_stage1/`
+- `figures/layer_norm_ablation_final/`
 - `figures/tinystories_vs_owt_bs128_main/`
 
 Retired files:
