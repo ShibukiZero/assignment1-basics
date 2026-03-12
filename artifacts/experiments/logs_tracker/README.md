@@ -33,8 +33,10 @@ Current writeup-facing figures:
 - `figures/layer_norm_ablation_final/`
 - `figures/tinystories_vs_owt_bs128_main/`
 
+Submission-facing summaries:
+- `experiment_log.md`: human-readable Chapter 7 experiment log
+
 Retired files:
-- `experiment_log.md`
 - `phase_summary.md`
 
-Those free-form ledgers were intentionally removed after they fell out of sync with the newer result manifests under `results/`. Going forward, the source of truth in this directory is the structured summaries plus copied per-run artifacts.
+The source of truth in this directory is the structured summaries plus copied per-run artifacts under `results/`. The human-readable `experiment_log.md` is a compact index over those durable artifacts for submission and review.

@@ -37,7 +37,10 @@ class GenerationRecord:
     max_new_tokens: int
     temperature: float
     top_p: float
-    generated_token_count: int
+    prompt_token_count: int
+    total_token_count: int
+    generated_new_token_count: int
+    ended_with_eot: bool
     generated_text: str
     checkpoint_iteration: int
 
@@ -201,6 +204,10 @@ def main() -> None:
     )
     generated_list = generated_ids.detach().cpu().tolist()
     generated_text = tokenizer.decode(generated_list)
+    prompt_token_count = len(prompt_ids)
+    total_token_count = len(generated_list)
+    generated_new_token_count = total_token_count - prompt_token_count
+    ended_with_eot = bool(generated_list and generated_list[-1] == end_of_text_token_id)
 
     record = GenerationRecord(
         run_name=str(config["run_name"]),
@@ -211,7 +218,10 @@ def main() -> None:
         max_new_tokens=args.max_new_tokens,
         temperature=args.temperature,
         top_p=args.top_p,
-        generated_token_count=len(generated_list),
+        prompt_token_count=prompt_token_count,
+        total_token_count=total_token_count,
+        generated_new_token_count=generated_new_token_count,
+        ended_with_eot=ended_with_eot,
         generated_text=generated_text,
         checkpoint_iteration=checkpoint_iteration,
     )

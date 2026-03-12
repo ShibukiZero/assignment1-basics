@@ -378,9 +378,9 @@ Figure: TinyStories validation-loss curves at `batch_size=128` for representativ
 
 **Answer:**
 
-The `batch_size=128` rerun suggests that the best learning rate is not exactly at the literal numerical divergence boundary. The refined optimum was `4.0e-3`, but a range of larger values (`1.2e-2`, `2e-2`, `5e-2`) still trained for 60 steps without NaNs while giving clearly worse validation loss. In other words, there is a substantial "stable but degraded" region above the optimum.
+The `batch_size=128` rerun suggests that the best learning rate is not exactly at the literal NaN boundary. The refined optimum was `4.0e-3`, but a range of larger values (`1.2e-2`, `2e-2`, `5e-2`) still trained for 60 steps without numerical blow-up while giving clearly worse validation loss. In other words, there is a substantial "stable but degraded" region above the optimum.
 
-At still larger learning rates, training became effectively unusable. In the same pilot setup, `1e-1` reached validation loss `5.4419`, `2e-1` reached `5.9544`, and `5e-1` reached `22.5846`. These runs did not numerically explode to NaN within the short pilot horizon, but they never entered a useful optimization regime and serve as clear failure-side references. So in this experiment the best learning rate is better described as lying near the lower edge of a broad degraded region, rather than exactly at the point of numerical divergence.
+At still larger learning rates, the runs entered a genuinely divergent optimization regime. In the same pilot setup, `1e-1` reached validation loss `5.4419`, `2e-1` reached `5.9544`, and `5e-1` reached `22.5846`; the highest-LR curve blows up rapidly and no longer makes meaningful optimization progress. Although these short pilots did not hit `NaN` within 60 steps, I still count the largest-LR runs as divergent in the optimization sense because the loss sharply departs from the stable training region and does not recover. So in this experiment the best learning rate is better described as lying below a broad degraded region and well below the clearly divergent high-LR regime, rather than exactly at the first point of numerical overflow.
 
 ![High-learning-rate behavior](artifacts/experiments/logs_tracker/figures/bs128_learning_rate/val_loss_vs_step.png)
 
