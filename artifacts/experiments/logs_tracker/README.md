@@ -20,12 +20,17 @@ Current durable result sets:
 - `results/bs128_lr_round2/`: TinyStories `batch_size=128` learning-rate sweep summary and copied run artifacts
 - `results/batch_size_sweep_round2/`: batch-size sweep summary
 - `results/generate_tinystories_bs128/`: generated TinyStories sample used for writeup
+- `results/generate_owt_bs128/`: generated OpenWebText sample used for writeup
 - `results/layer_norm_ablation_coarse_lr/`: no-RMSNorm coarse lower-LR sweep summary
+- `results/owt_bs128_lr_coarse/`: OpenWebText coarse learning-rate sweep summary and copied run artifacts
+- `results/owt_bs128_lr_refined/`: OpenWebText refined learning-rate sweep summary and copied run artifacts
+- `results/owt_main_bs128_lr2p5e-03/`: writeup-facing OpenWebText main run summary and copied run artifacts
 
 Current writeup-facing figures:
 - `figures/bs128_learning_rate/`
 - `figures/batch_size_round2/`
 - `figures/layer_norm_ablation_stage1/`
+- `figures/tinystories_vs_owt_bs128_main/`
 
 Retired files:
 - `experiment_log.md`

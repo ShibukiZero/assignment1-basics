@@ -509,11 +509,45 @@ Figure: SwiGLU converges slightly better than a parameter-matched SiLU feed-forw
 
 **Answer:**
 
+For the OpenWebText main experiment, I kept the same Transformer stack and training horizon as in the TinyStories main run: `context_length=256`, `d_model=512`, `d_ff=1344`, `num_layers=4`, `num_heads=16`, pre-norm, RoPE, SwiGLU, `batch_size=128`, and `10000` optimizer steps. This again corresponds to exactly `327,680,000` processed tokens. Because OWT uses a different dataset and tokenizer, I re-tuned the learning rate at `batch_size=128` using a two-stage pilot sweep. A coarse sweep identified the best region near `2e-3` to `3e-3`, and a refined sweep over `{1.5e-3, 2.0e-3, 2.5e-3, 3.0e-3, 3.5e-3}` selected `learning_rate=2.5e-3`, with best pilot validation loss `5.2282` at step `400`.
+
+Using that tuned learning rate, the final OWT run reached best validation loss `3.8886` at step `10000`. The run completed in about `3470.46` seconds (`57.8` minutes), so it stayed comfortably within the intended wall-clock budget. For comparison, the matched TinyStories rerun used for the joint learning-curve figure reached validation loss `1.3105` at the same `10000`-step horizon. The OWT model therefore trains successfully under the matched budget, but its absolute validation loss remains much higher than TinyStories.
+
+The main reason for the loss gap is that OpenWebText is a broader and higher-entropy distribution. TinyStories is intentionally simple and repetitive: it has a small vocabulary, short sentences, recurring narrative templates, and strong local regularities. OWT is much more heterogeneous, spanning many topics, styles, and discourse structures, so the same model capacity must spread across a much harder prediction problem. In addition, the OWT tokenizer uses a larger `32K` vocabulary instead of the TinyStories `10K` vocabulary, which makes the prediction space less specialized to a narrow domain. Even so, the OWT curve still improves throughout the full run and reaches its best value at the final step, which suggests that the model was still undertrained rather than overfit at this budget.
+
+![TinyStories vs. OpenWebText validation loss vs. step](artifacts/experiments/logs_tracker/figures/tinystories_vs_owt_bs128_main/val_loss_vs_step.png)
+
+Figure: Under the same `10000`-step training budget, the OpenWebText model converges much more slowly and to a much higher loss than the matched TinyStories run.
+
+![TinyStories vs. OpenWebText validation loss vs. wall clock](artifacts/experiments/logs_tracker/figures/tinystories_vs_owt_bs128_main/val_loss_vs_wallclock.png)
+
+Figure: The OWT run also remains within the wall-clock budget, finishing in under one hour, but it is consistently worse than TinyStories at matched time as well as matched steps.
+
 ### (b)
 **Question:** Provide generated text from OWT LM (same format as TinyStories outputs). How fluent is it? Why is output quality worse despite same model and compute budget?  
 **Deliverable:** Generated text + analysis.
 
 **Answer:**
+
+I generated from the OWT checkpoint using the same decoding settings as the TinyStories sample for a fair comparison: prompt `"Once upon a time, there was"`, `max_new_tokens=256`, `temperature=0.8`, and `top_p=0.9`.
+
+**Generated text:**
+
+```text
+Once upon a time, there was one, one, an opportunity to become a well-known politician and a clear-eyed friend of mine. (During this time, I had to make my point.)
+
+Once I was a member of the Council and in the Conservative Party, I understood what was going on with the ‘reactionary principle’ of the Conservatives. I thought we had to be on the side of the job in the future, in order to make an informed decision on what to do. That was how I was now in the Conservative Party, and the same history was the exact opposite of the Prime Minister’s approach in the coming weeks. The same was true for the Liberals.
+
+Then, as a former Tory councillor, I was in the Conservative Party and I was very proud of what the campaign would have done.
+
+One of my closest friends and colleagues I had in the last three months was a member of the Labour Party. He seemed to have been all but certain to be on the run for the party in the leadership, the party. He was a minister for Labour and the leader for the party. He was a leader in Labour and would like to see the party in the hands of the party and the leadership.
+
+A couple of years later I attended
+```
+
+This sample is more coherent than the first noisy trial I observed during debugging, but it is still clearly worse than the TinyStories generation. The model does produce recognizable English prose and even settles into a plausible political-news/register shift, which is a reasonable match to OpenWebText. However, it still shows several quality problems: awkward opening repetition (`"one, one"`), entity/topic drift, repeated phrases around `"the party"` and `"Conservative Party"`, and an abrupt stop without reaching a clean ending or `<|endoftext|>` token within the decoding budget. So the model has learned broad stylistic fragments of web text, but it still struggles to maintain strong discourse structure over a longer continuation.
+
+There are several reasons the output quality is worse despite using the same architecture and compute budget. First, OWT is a much harder modeling problem than TinyStories, so the same small model must spread its capacity over many more topics, genres, and writing styles. Second, the prompt itself is still more naturally in-domain for TinyStories than for OWT: a fairy-tale opening is a direct fit for the children-story corpus, but on OWT it can push the model into an unstable mixture of narrative and political/news continuation modes. Third, repetition and unfinished continuations are typical symptoms of an undertrained small model on a broad corpus under stochastic decoding. Overall, this generation is qualitatively consistent with the validation-loss result from part (a): the model has learned local English fluency and some web-text style, but not the tighter global coherence that the TinyStories model achieved in-domain.
 
 ---
 
