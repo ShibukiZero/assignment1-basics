@@ -1,0 +1,13 @@
+{
+  "best_learning_rate": 0.001,
+  "best_val_loss": 1.9217811822891235,
+  "best_run_name": "tinystories_no_norm_bs128_lrscan_lr1p0e-03",
+  "summary_path": ".agents/logs/tinystories_no_norm_bs128_lrscan_lr1p0e-03/summary.json",
+  "suggested_next_grid": [
+    0.001,
+    0.0012247448713915891,
+    0.0015
+  ],
+  "artifact_run_dir": "artifacts/experiments/ch7/7_3_1/results/runs/tinystories_no_norm_bs128_lrscan_lr1p0e-03",
+  "artifact_summary_path": "artifacts/experiments/ch7/7_3_1/results/runs/tinystories_no_norm_bs128_lrscan_lr1p0e-03/summary.json"
+}

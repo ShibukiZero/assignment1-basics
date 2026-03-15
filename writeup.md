@@ -67,9 +67,9 @@ Training a 10,000-vocabulary byte-level BPE tokenizer on the full TinyStories tr
 Profiling shows that after pre-tokenization parallelization, the dominant cost shifts to the merge stage, especially best-pair selection and heap-based pair-count maintenance (e.g., `pop_best_pair_lazy` and `_heapq.heappop`-related paths). In other words, regex pre-tokenization is no longer the primary bottleneck in the optimized implementation.
 
 **Evidence paths (profiles/logs):**
-- `artifacts/experiments/tokenizer/tinystories_10k_train_w16/report.json`
-- `artifacts/experiments/tokenizer/tinystories_10k_train_w16/train.prof`
-- `artifacts/experiments/tokenizer/tinystories_10k_train_w16/README.md`
+- `artifacts/experiments/ch2/2_5_1/report.json`
+- `artifacts/experiments/ch2/2_5_1/train.prof`
+- `artifacts/experiments/ch2/2_5_1/README.md`
 
 ---
 
@@ -90,9 +90,9 @@ Training the 32,000-vocabulary byte-level BPE tokenizer on OpenWebText completed
 The TinyStories tokenizer (10K vocab) is more concentrated on simple narrative English (its longest token is `" responsibility"` at 15 bytes), while the OpenWebText tokenizer (32K vocab) captures a much broader and noisier web distribution, including long punctuation-heavy tokens. In practice, the OWT tokenizer should generally compress OWT-like text better, while the TinyStories tokenizer is more specialized to children-story style text.
 
 **Evidence paths (artifacts/logs):**
-- `artifacts/experiments/tokenizer/tinystories_10k_train_w16/report.json`
-- `artifacts/experiments/tokenizer/owt_32k_train_w16/report.json`
-- `artifacts/experiments/tokenizer/owt_32k_train_w16/README.md`
+- `artifacts/experiments/ch2/2_5_1/report.json`
+- `artifacts/experiments/ch2/2_5_2/report.json`
+- `artifacts/experiments/ch2/2_5_2/README.md`
 
 ---
 
@@ -144,7 +144,7 @@ For this assignment's `TransformerLM` implementation, the parameter count is
 `2 * V * D + L * (4 * D^2 + 3 * D * F + 2 * D) + D = 2 * 50257 * 1600 + 48 * (4 * 1600^2 + 3 * 1600 * 6400 + 2 * 1600) + 1600 = 2,127,057,600`
 trainable parameters (about `2.13B`); at float32 (`4` bytes per parameter), this requires
 `2,127,057,600 * 4 = 8,508,230,400` bytes, or about `8.51 GB` (`7.92 GiB`), just to store the parameters.
-These values are checked by `artifacts/experiments/transformer_accounting/verify_gpt2_xl_accounting.py`.
+These values are checked by `artifacts/experiments/ch3/3_6_1/verify_gpt2_xl_accounting.py`.
 
 ### (b)
 **Question:** Identify the matrix multiplies required for one forward pass of the GPT-2 XL-shaped model. How many FLOPs do they require in total (sequence length = `context_length`)?  
@@ -171,7 +171,7 @@ Assuming a single input sequence of length `T = 1024`, with `L = 48`, `D = 1600`
   - `X @ W_3`: `20,971,520,000`
   - `gate @ W_2`: `2 * T * F * D = 20,971,520,000`
 
-This gives `90,596,966,400` FLOPs per Transformer layer, so the `48` blocks require `4,348,654,387,200` FLOPs in total. The final language-model head adds `2 * T * D * V = 2 * 1024 * 1600 * 50257 = 164,682,137,600` FLOPs, giving a total of `4,513,336,524,800` FLOPs for one forward pass. These values are checked by `artifacts/experiments/transformer_accounting/verify_gpt2_xl_accounting.py`.
+This gives `90,596,966,400` FLOPs per Transformer layer, so the `48` blocks require `4,348,654,387,200` FLOPs in total. The final language-model head adds `2 * T * D * V = 2 * 1024 * 1600 * 50257 = 164,682,137,600` FLOPs, giving a total of `4,513,336,524,800` FLOPs for one forward pass. These values are checked by `artifacts/experiments/ch3/3_6_1/verify_gpt2_xl_accounting.py`.
 
 ### (c)
 **Question:** Based on your analysis, which parts of the model require the most FLOPs?  
@@ -367,7 +367,7 @@ The coarse sweep showed that the best region was near a few times `10^-3`, while
 
 I then used `learning_rate=4.0e-3` for a longer training run with `warmup_iters=200`, `beta1=0.9`, `beta2=0.999`, `eps=1e-8`, and `weight_decay=0.1`. With `batch_size=128` and `10000` steps, this run processed exactly `327,680,000` tokens and reached best validation loss `1.3234` at step `10000`, comfortably beating the assignment target of `1.45`. This is therefore the final learning rate I selected for the TinyStories model under the `batch_size=128` setting.
 
-![Representative learning-rate sweep](artifacts/experiments/logs_tracker/figures/bs128_learning_rate/val_loss_vs_step.png)
+![Representative learning-rate sweep](artifacts/experiments/ch7/7_2_1/figures/val_loss_vs_step.png)
 
 Figure: TinyStories validation-loss curves at `batch_size=128` for representative learning rates. The best region is centered near `4e-3`, while larger learning rates quickly degrade.
 
@@ -382,7 +382,7 @@ The `batch_size=128` rerun suggests that the best learning rate is not exactly a
 
 At still larger learning rates, the runs entered a genuinely divergent optimization regime. In the same pilot setup, `1e-1` reached validation loss `5.4419`, `2e-1` reached `5.9544`, and `5e-1` reached `22.5846`; the highest-LR curve blows up rapidly and no longer makes meaningful optimization progress. Although these short pilots did not hit `NaN` within 60 steps, I still count the largest-LR runs as divergent in the optimization sense because the loss sharply departs from the stable training region and does not recover. So in this experiment the best learning rate is better described as lying below a broad degraded region and well below the clearly divergent high-LR regime, rather than exactly at the first point of numerical overflow.
 
-![High-learning-rate behavior](artifacts/experiments/logs_tracker/figures/bs128_learning_rate/val_loss_vs_step.png)
+![High-learning-rate behavior](artifacts/experiments/ch7/7_2_1/figures/val_loss_vs_step.png)
 
 Figure: At `batch_size=128`, learning rates above the optimum quickly move from "worse but stable" into an unusable failure-side regime.
 
@@ -400,7 +400,7 @@ I varied batch size from `1` up to the largest configuration that completed clea
 
 At a fixed 400-step pilot budget, validation loss improved steadily as batch size increased. The best validation losses were `2.194` at `bs=64`, `1.961` at `bs=128`, `1.792` at `bs=256`, and `1.689` at `bs=512`. However, step time also increased substantially: about `0.257s/step` at `bs=128`, `0.495s/step` at `bs=256`, and `0.980s/step` at `bs=512`. In practice, `bs=128` is a good speed-oriented default, while `bs=256` is the best overall quality/throughput compromise on my hardware. `bs=512` gave the lowest pilot validation loss among the completed runs, but its per-step cost was much higher, so the marginal quality gain came with a large runtime penalty.
 
-![Batch-size comparison](artifacts/experiments/logs_tracker/figures/batch_size_round2/val_loss_vs_step.png)
+![Batch-size comparison](artifacts/experiments/ch7/7_2_2/figures/val_loss_vs_step.png)
 
 Figure: Best validation-loss curve for each batch size after local LR retuning. Larger batch sizes achieve lower loss in the fixed-step pilot, but the runtime cost grows sharply beyond `bs=256`.
 
@@ -444,7 +444,7 @@ I then searched over lower learning rates with the same no-RMSNorm architecture 
 
 These results show that RMSNorm is doing important stabilization work in the baseline model. The previous optimal learning rate is too high once normalization is removed: training does not merely degrade, it becomes numerically unstable during warmup. Lowering the learning rate to `1.0e-3` restores stable optimization, but performance is still substantially worse than the normalized baseline, whose tuned `batch_size=128`, `learning_rate=4e-3` run reached validation loss `1.3234`. In short, RMSNorm improves both optimization stability and quality under a fixed training budget.
 
-![Layer norm ablation: old LR vs. lower LR](artifacts/experiments/logs_tracker/figures/layer_norm_ablation_final/val_loss_vs_step.png)
+![Layer norm ablation: old LR vs. lower LR](artifacts/experiments/ch7/7_3_1/figures/val_loss_vs_step.png)
 
 Figure: Without RMSNorm, the previous optimal `learning_rate=4e-3` becomes unstable and reaches `NaN`, while lowering the learning rate to `1e-3` restores stable training. Even after stabilization, the no-RMSNorm model converges much worse than the normalized baseline.
 
@@ -461,7 +461,7 @@ Starting from the same fixed TinyStories training setup used in the other archit
 
 However, post-norm converged noticeably worse than pre-norm. The matched-horizon pre-norm control reached validation loss `1.4656` at step `5000`, while the post-norm run only reached `1.5422` at the same step, a degradation of about `0.0766` validation-loss points. This indicates that even when post-norm remains trainable, pre-norm is still the better optimization choice for this model and budget: it gives consistently faster and better convergence.
 
-![Pre-norm vs. post-norm](artifacts/experiments/logs_tracker/figures/arch_ablation_suite_bs128_5k/pre_norm_ablation/val_loss_vs_step.png)
+![Pre-norm vs. post-norm](artifacts/experiments/ch7/7_3_2/figures/val_loss_vs_step.png)
 
 Figure: Under the same TinyStories training hyperparameters, pre-norm converges better than post-norm over `5000` steps.
 
@@ -478,7 +478,7 @@ I next removed RoPE entirely and trained the resulting NoPE model with the same 
 
 Even so, removing positional information clearly hurt performance. The RoPE baseline reached validation loss `1.4656` at step `5000`, whereas the NoPE model reached only `1.5676`, a gap of about `0.1020`. Among the three architecture ablations in this matched-horizon suite, NoPE was the worst. So while explicit positional embeddings are not strictly required for learning to proceed, they are still very important for good sample efficiency and final quality on this task.
 
-![RoPE vs. NoPE](artifacts/experiments/logs_tracker/figures/arch_ablation_suite_bs128_5k/no_pos_emb/val_loss_vs_step.png)
+![RoPE vs. NoPE](artifacts/experiments/ch7/7_3_3/figures/val_loss_vs_step.png)
 
 Figure: Removing RoPE does not prevent learning, but the NoPE model converges substantially worse than the RoPE baseline.
 
@@ -495,7 +495,7 @@ For this ablation I replaced SwiGLU with a plain SiLU feed-forward network, whil
 
 This change produced the smallest degradation of the three ablations. The SwiGLU baseline reached validation loss `1.4656` at step `5000`, while the SiLU model reached `1.4781`, only about `0.0125` worse. So gating does help, and SwiGLU is still the better choice, but on this model scale and budget the advantage is modest compared with the much larger effects of normalization placement or removing positional information.
 
-![SwiGLU vs. SiLU](artifacts/experiments/logs_tracker/figures/arch_ablation_suite_bs128_5k/swiglu_ablation/val_loss_vs_step.png)
+![SwiGLU vs. SiLU](artifacts/experiments/ch7/7_3_4/figures/val_loss_vs_step.png)
 
 Figure: SwiGLU converges slightly better than a parameter-matched SiLU feed-forward network, but the gap is much smaller than in the post-norm or NoPE ablations.
 
@@ -515,11 +515,11 @@ Using that tuned learning rate, the final OWT run reached best validation loss `
 
 The main reason for the loss gap is that OpenWebText is a broader and higher-entropy distribution. TinyStories is intentionally simple and repetitive: it has a small vocabulary, short sentences, recurring narrative templates, and strong local regularities. OWT is much more heterogeneous, spanning many topics, styles, and discourse structures, so the same model capacity must spread across a much harder prediction problem. In addition, the OWT tokenizer uses a larger `32K` vocabulary instead of the TinyStories `10K` vocabulary, which makes the prediction space less specialized to a narrow domain. Even so, the OWT curve still improves throughout the full run and reaches its best value at the final step, which suggests that the model was still undertrained rather than overfit at this budget.
 
-![TinyStories vs. OpenWebText validation loss vs. step](artifacts/experiments/logs_tracker/figures/tinystories_vs_owt_bs128_main/val_loss_vs_step.png)
+![TinyStories vs. OpenWebText validation loss vs. step](artifacts/experiments/ch7/7_4_1/figures/comparison/val_loss_vs_step.png)
 
 Figure: Under the same `10000`-step training budget, the OpenWebText model converges much more slowly and to a much higher loss than the matched TinyStories run.
 
-![TinyStories vs. OpenWebText validation loss vs. wall clock](artifacts/experiments/logs_tracker/figures/tinystories_vs_owt_bs128_main/val_loss_vs_wallclock.png)
+![TinyStories vs. OpenWebText validation loss vs. wall clock](artifacts/experiments/ch7/7_4_1/figures/comparison/val_loss_vs_wallclock.png)
 
 Figure: The OWT run also remains within the wall-clock budget, finishing in under one hour, but it is consistently worse than TinyStories at matched time as well as matched steps.
 
@@ -569,17 +569,17 @@ The figure below shows the full staged training curve with cumulative wall-clock
 
 This result should be interpreted as a leaderboard-oriented continuation recipe rather than as a single uninterrupted from-scratch run. I think it is still informative because the final recipe came from a consistent sequence of small controlled decisions, and the final staged curve shows clearly where the additional gain came from.
 
-![Validation loss versus cumulative wall-clock time for the final staged leaderboard recipe. The two colors correspond to the initial `ctx256, bs64` training stage and the subsequent `ctx640, bs32` continuation stage.](artifacts/experiments/leaderboard/figures/leaderboard_ctx640_bs32_segmented_recipe/val_loss_vs_wallclock.png)
+![Validation loss versus cumulative wall-clock time for the final staged leaderboard recipe. The two colors correspond to the initial `ctx256, bs64` training stage and the subsequent `ctx640, bs32` continuation stage.](artifacts/experiments/ch7/7_5_1/figures/leaderboard_ctx640_bs32_segmented_recipe/val_loss_vs_wallclock.png)
 
 ---
 
 ## Appendix: Evidence Index
 - Curves:
-  - `artifacts/experiments/leaderboard/figures/leaderboard_ctx640_bs32_segmented_recipe/val_loss_vs_wallclock.png`
-  - `artifacts/experiments/leaderboard/figures/leaderboard_ctx640_bs32_segmented_recipe/val_loss_vs_step.png`
+  - `artifacts/experiments/ch7/7_5_1/figures/leaderboard_ctx640_bs32_segmented_recipe/val_loss_vs_wallclock.png`
+  - `artifacts/experiments/ch7/7_5_1/figures/leaderboard_ctx640_bs32_segmented_recipe/val_loss_vs_step.png`
 - Tables:
-  - `artifacts/experiments/leaderboard/figures/leaderboard_ctx640_bs32_segmented_recipe/val_loss_summary.md`
+  - `artifacts/experiments/ch7/7_5_1/figures/leaderboard_ctx640_bs32_segmented_recipe/val_loss_summary.md`
 - Key logs:
-  - `artifacts/experiments/leaderboard/figures/leaderboard_ctx640_bs32_segmented_recipe/val_loss_summary.md`
+  - `artifacts/experiments/ch7/7_5_1/figures/leaderboard_ctx640_bs32_segmented_recipe/val_loss_summary.md`
 - Notes:
-  - `artifacts/experiments/leaderboard/README.md`
+  - `artifacts/experiments/ch7/7_5_1/README.md`

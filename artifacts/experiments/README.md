@@ -9,9 +9,21 @@ metadata, not as repository-local paths that are expected to exist on every
 machine. For repository-local evidence, prefer paths rooted under
 `artifacts/experiments/`.
 
-## Subdirectories
-- `logs_tracker/`: Chapter 7 durable run ledger, persisted summarized results, figures, and plotting utilities.
-- `tokenizer/`: tokenizer training and tokenizer-related experiment artifacts.
+## Layout
+- `ch2/`: Chapter 2 artifacts grouped by handout section.
+- `ch3/`: Chapter 3 artifacts grouped by handout section.
+- `ch4/`: Chapter 4 artifacts grouped by handout section.
+- `ch7/`: Chapter 7 artifacts grouped by handout section.
+
+Within each chapter directory, the first nested folder uses the corresponding
+handout numbering so the writeup and the repository layout stay aligned. For
+example:
+
+- `ch2/2_5_1/`: artifacts for the first question under Section 2.5
+- `ch7/7_4_1/`: artifacts for the main experiment under Section 7.4
+
+Question folders may contain `results/`, `figures/`, or small helper scripts
+when those files are specific to that handout item.
 
 ## Related code
 - Experiment runner scripts and sweep configs live under:

@@ -12,4 +12,4 @@ Use this directory for:
 Directory split:
 - `cs336_basics/experiments/`: code that runs or summarizes experiments
 - `cs336_basics/experiments/sweep_configs/`: JSON sweep grids
-- `artifacts/experiments/logs_tracker/`: durable experiment logs, summarized outputs, and plotting scripts
+- `artifacts/experiments/ch7/`: durable experiment logs, summarized outputs, and plotting scripts

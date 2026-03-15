@@ -1,0 +1,13 @@
+{
+  "run_name": "owt_main_bs128_lr2p5e-03",
+  "checkpoint_path": "/root/autodl-tmp/training_runs/owt_main_bs128_lr2p5e-03/best_checkpoint.pt",
+  "config_path": "/root/autodl-tmp/training_runs/owt_main_bs128_lr2p5e-03/config.json",
+  "tokenizer_dir": "artifacts/experiments/ch2/2_5_2",
+  "prompt": "Once upon a time, there was",
+  "max_new_tokens": 256,
+  "temperature": 0.8,
+  "top_p": 0.9,
+  "generated_token_count": 263,
+  "generated_text": "Once upon a time, there was one, one, an opportunity to become a well-known politician and a clear-eyed friend of mine. (During this time, I had to make my point.)\n\nOnce I was a member of the Council and in the Conservative Party, I understood what was going on with the ‘reactionary principle’ of the Conservatives. I thought we had to be on the side of the job in the future, in order to make an informed decision on what to do. That was how I was now in the Conservative Party, and the same history was the exact opposite of the Prime Minister’s approach in the coming weeks. The same was true for the Liberals.\n\nThen, as a former Tory councillor, I was in the Conservative Party and I was very proud of what the campaign would have done.\n\nOne of my closest friends and colleagues I had in the last three months was a member of the Labour Party. He seemed to have been all but certain to be on the run for the party in the leadership, the party. He was a minister for Labour and the leader for the party. He was a leader in Labour and would like to see the party in the hands of the party and the leadership.\n\nA couple of years later I attended",
+  "checkpoint_iteration": 10000
+}
