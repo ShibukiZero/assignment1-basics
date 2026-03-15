@@ -9,8 +9,5 @@
     0.0015
   ],
   "artifact_run_dir": "artifacts/experiments/logs_tracker/results/layer_norm_ablation_coarse_lr/runs/tinystories_no_norm_bs128_lrscan_lr1p0e-03",
-  "artifact_metrics_path": "artifacts/experiments/logs_tracker/results/layer_norm_ablation_coarse_lr/runs/tinystories_no_norm_bs128_lrscan_lr1p0e-03/metrics.jsonl",
-  "artifact_summary_path": "artifacts/experiments/logs_tracker/results/layer_norm_ablation_coarse_lr/runs/tinystories_no_norm_bs128_lrscan_lr1p0e-03/summary.json",
-  "artifact_diagnostics_path": "artifacts/experiments/logs_tracker/results/layer_norm_ablation_coarse_lr/runs/tinystories_no_norm_bs128_lrscan_lr1p0e-03/diagnostics.jsonl",
-  "artifact_config_path": "artifacts/experiments/logs_tracker/results/layer_norm_ablation_coarse_lr/runs/tinystories_no_norm_bs128_lrscan_lr1p0e-03/config.json"
+  "artifact_summary_path": "artifacts/experiments/logs_tracker/results/layer_norm_ablation_coarse_lr/runs/tinystories_no_norm_bs128_lrscan_lr1p0e-03/summary.json"
 }
