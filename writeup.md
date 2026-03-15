@@ -580,6 +580,6 @@ This result should be interpreted as a leaderboard-oriented continuation recipe 
 - Tables:
   - `artifacts/experiments/leaderboard/figures/leaderboard_ctx640_bs32_segmented_recipe/val_loss_summary.md`
 - Key logs:
-  - `artifacts/experiments/leaderboard/figures/leaderboard_ctx640_bs32_final/val_loss_summary.md`
+  - `artifacts/experiments/leaderboard/figures/leaderboard_ctx640_bs32_segmented_recipe/val_loss_summary.md`
 - Notes:
   - `artifacts/experiments/leaderboard/README.md`
