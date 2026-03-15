@@ -175,6 +175,7 @@ def stitch_stages(
 ) -> list[StageSeries]:
     stitched: list[StageSeries] = []
     cumulative_wallclock_offset = 0.0
+    previous_final_point: dict | None = None
 
     for spec in specs:
         raw_points = load_points(
@@ -185,6 +186,17 @@ def stitch_stages(
             end_step=spec.end_step,
         )
         stage_points: list[dict] = []
+        if previous_final_point is not None:
+            # Add a synthetic anchor at the stage boundary so the new segment
+            # visibly starts from the checkpoint that it resumed from.
+            stage_points.append(
+                {
+                    "step": previous_final_point["step"],
+                    "wallclock_seconds": 0.0,
+                    metric: previous_final_point[metric],
+                    "cumulative_wallclock_seconds": cumulative_wallclock_offset,
+                }
+            )
         for point in raw_points:
             point = dict(point)
             point["cumulative_wallclock_seconds"] = (
@@ -192,6 +204,7 @@ def stitch_stages(
             )
             stage_points.append(point)
         cumulative_wallclock_offset = stage_points[-1]["cumulative_wallclock_seconds"]
+        previous_final_point = stage_points[-1]
         stitched.append(StageSeries(label=spec.label, points=stage_points))
 
     return stitched
