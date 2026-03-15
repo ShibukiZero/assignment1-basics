@@ -1,0 +1,224 @@
+{
+  "experiments": [
+    {
+      "name": "l8_d1024_lr2p0e-04",
+      "run_name": "owt_l8_d1024_bs64_lr2p0e-04_pilot",
+      "d_model": 1024,
+      "num_layers": 8,
+      "num_heads": 32,
+      "d_ff": 2688,
+      "batch_size": 64,
+      "learning_rate": 0.0002,
+      "min_learning_rate": 0.00002
+    },
+    {
+      "name": "l8_d1024_lr3p0e-04",
+      "run_name": "owt_l8_d1024_bs64_lr3p0e-04_pilot",
+      "d_model": 1024,
+      "num_layers": 8,
+      "num_heads": 32,
+      "d_ff": 2688,
+      "batch_size": 64,
+      "learning_rate": 0.0003,
+      "min_learning_rate": 0.00003
+    },
+    {
+      "name": "l8_d1024_lr4p0e-04",
+      "run_name": "owt_l8_d1024_bs64_lr4p0e-04_pilot",
+      "d_model": 1024,
+      "num_layers": 8,
+      "num_heads": 32,
+      "d_ff": 2688,
+      "batch_size": 64,
+      "learning_rate": 0.0004,
+      "min_learning_rate": 0.00004
+    },
+    {
+      "name": "l8_d1024_lr6p0e-04",
+      "run_name": "owt_l8_d1024_bs64_lr6p0e-04_pilot",
+      "d_model": 1024,
+      "num_layers": 8,
+      "num_heads": 32,
+      "d_ff": 2688,
+      "batch_size": 64,
+      "learning_rate": 0.0006,
+      "min_learning_rate": 0.00006
+    },
+    {
+      "name": "l8_d1024_lr8p0e-04",
+      "run_name": "owt_l8_d1024_bs64_lr8p0e-04_pilot",
+      "d_model": 1024,
+      "num_layers": 8,
+      "num_heads": 32,
+      "d_ff": 2688,
+      "batch_size": 64,
+      "learning_rate": 0.0008,
+      "min_learning_rate": 0.00008
+    },
+    {
+      "name": "l8_d1024_lr1p2e-03",
+      "run_name": "owt_l8_d1024_bs64_lr1p2e-03_pilot",
+      "d_model": 1024,
+      "num_layers": 8,
+      "num_heads": 32,
+      "d_ff": 2688,
+      "batch_size": 64,
+      "learning_rate": 0.0012,
+      "min_learning_rate": 0.00012
+    },
+    {
+      "name": "l8_d1024_lr1p6e-03",
+      "run_name": "owt_l8_d1024_bs64_lr1p6e-03_pilot",
+      "d_model": 1024,
+      "num_layers": 8,
+      "num_heads": 32,
+      "d_ff": 2688,
+      "batch_size": 64,
+      "learning_rate": 0.0016,
+      "min_learning_rate": 0.00016
+    },
+    {
+      "name": "l8_d1024_lr2p2e-03",
+      "run_name": "owt_l8_d1024_bs64_lr2p2e-03_pilot",
+      "d_model": 1024,
+      "num_layers": 8,
+      "num_heads": 32,
+      "d_ff": 2688,
+      "batch_size": 64,
+      "learning_rate": 0.0022,
+      "min_learning_rate": 0.00022
+    },
+    {
+      "name": "l8_d1024_lr3p0e-03",
+      "run_name": "owt_l8_d1024_bs64_lr3p0e-03_pilot",
+      "d_model": 1024,
+      "num_layers": 8,
+      "num_heads": 32,
+      "d_ff": 2688,
+      "batch_size": 64,
+      "learning_rate": 0.003,
+      "min_learning_rate": 0.0003
+    },
+    {
+      "name": "l8_d1024_lr4p0e-03",
+      "run_name": "owt_l8_d1024_bs64_lr4p0e-03_pilot",
+      "d_model": 1024,
+      "num_layers": 8,
+      "num_heads": 32,
+      "d_ff": 2688,
+      "batch_size": 64,
+      "learning_rate": 0.004,
+      "min_learning_rate": 0.0004
+    },
+    {
+      "name": "l8_d1024_lr5p5e-03",
+      "run_name": "owt_l8_d1024_bs64_lr5p5e-03_pilot",
+      "d_model": 1024,
+      "num_layers": 8,
+      "num_heads": 32,
+      "d_ff": 2688,
+      "batch_size": 64,
+      "learning_rate": 0.0055,
+      "min_learning_rate": 0.00055
+    },
+    {
+      "name": "l8_d1024_lr7p5e-03",
+      "run_name": "owt_l8_d1024_bs64_lr7p5e-03_pilot",
+      "d_model": 1024,
+      "num_layers": 8,
+      "num_heads": 32,
+      "d_ff": 2688,
+      "batch_size": 64,
+      "learning_rate": 0.0075,
+      "min_learning_rate": 0.00075
+    },
+    {
+      "name": "l8_d1024_lr1p0e-02",
+      "run_name": "owt_l8_d1024_bs64_lr1p0e-02_pilot",
+      "d_model": 1024,
+      "num_layers": 8,
+      "num_heads": 32,
+      "d_ff": 2688,
+      "batch_size": 64,
+      "learning_rate": 0.01,
+      "min_learning_rate": 0.001
+    },
+    {
+      "name": "l8_d1024_lr1p4e-02",
+      "run_name": "owt_l8_d1024_bs64_lr1p4e-02_pilot",
+      "d_model": 1024,
+      "num_layers": 8,
+      "num_heads": 32,
+      "d_ff": 2688,
+      "batch_size": 64,
+      "learning_rate": 0.014,
+      "min_learning_rate": 0.0014
+    },
+    {
+      "name": "l8_d1024_lr1p9e-02",
+      "run_name": "owt_l8_d1024_bs64_lr1p9e-02_pilot",
+      "d_model": 1024,
+      "num_layers": 8,
+      "num_heads": 32,
+      "d_ff": 2688,
+      "batch_size": 64,
+      "learning_rate": 0.019,
+      "min_learning_rate": 0.0019
+    },
+    {
+      "name": "l8_d1024_lr2p6e-02",
+      "run_name": "owt_l8_d1024_bs64_lr2p6e-02_pilot",
+      "d_model": 1024,
+      "num_layers": 8,
+      "num_heads": 32,
+      "d_ff": 2688,
+      "batch_size": 64,
+      "learning_rate": 0.026,
+      "min_learning_rate": 0.0026
+    },
+    {
+      "name": "l8_d1024_lr3p6e-02",
+      "run_name": "owt_l8_d1024_bs64_lr3p6e-02_pilot",
+      "d_model": 1024,
+      "num_layers": 8,
+      "num_heads": 32,
+      "d_ff": 2688,
+      "batch_size": 64,
+      "learning_rate": 0.036,
+      "min_learning_rate": 0.0036
+    },
+    {
+      "name": "l8_d1024_lr5p0e-02",
+      "run_name": "owt_l8_d1024_bs64_lr5p0e-02_pilot",
+      "d_model": 1024,
+      "num_layers": 8,
+      "num_heads": 32,
+      "d_ff": 2688,
+      "batch_size": 64,
+      "learning_rate": 0.05,
+      "min_learning_rate": 0.005
+    },
+    {
+      "name": "l8_d1024_lr7p0e-02",
+      "run_name": "owt_l8_d1024_bs64_lr7p0e-02_pilot",
+      "d_model": 1024,
+      "num_layers": 8,
+      "num_heads": 32,
+      "d_ff": 2688,
+      "batch_size": 64,
+      "learning_rate": 0.07,
+      "min_learning_rate": 0.007
+    },
+    {
+      "name": "l8_d1024_lr1p0e-01",
+      "run_name": "owt_l8_d1024_bs64_lr1p0e-01_pilot",
+      "d_model": 1024,
+      "num_layers": 8,
+      "num_heads": 32,
+      "d_ff": 2688,
+      "batch_size": 64,
+      "learning_rate": 0.1,
+      "min_learning_rate": 0.01
+    }
+  ]
+}

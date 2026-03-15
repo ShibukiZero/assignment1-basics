@@ -1,0 +1,94 @@
+{
+  "experiments": [
+    {
+      "name": "depth_l16_d512",
+      "run_name": "owt_boundary_bs64_l16_d512_lr1p5e-03",
+      "d_model": 512,
+      "num_layers": 16,
+      "num_heads": 16,
+      "d_ff": 1344,
+      "batch_size": 64
+    },
+    {
+      "name": "depth_l24_d512",
+      "run_name": "owt_boundary_bs64_l24_d512_lr1p5e-03",
+      "d_model": 512,
+      "num_layers": 24,
+      "num_heads": 16,
+      "d_ff": 1344,
+      "batch_size": 64
+    },
+    {
+      "name": "depth_l32_d512",
+      "run_name": "owt_boundary_bs64_l32_d512_lr1p5e-03",
+      "d_model": 512,
+      "num_layers": 32,
+      "num_heads": 16,
+      "d_ff": 1344,
+      "batch_size": 64
+    },
+    {
+      "name": "width_l4_d1024",
+      "run_name": "owt_boundary_bs64_l4_d1024_lr1p5e-03",
+      "d_model": 1024,
+      "num_layers": 4,
+      "num_heads": 32,
+      "d_ff": 2688,
+      "batch_size": 64
+    },
+    {
+      "name": "width_l4_d1536",
+      "run_name": "owt_boundary_bs64_l4_d1536_lr1p5e-03",
+      "d_model": 1536,
+      "num_layers": 4,
+      "num_heads": 48,
+      "d_ff": 4032,
+      "batch_size": 64
+    },
+    {
+      "name": "width_l4_d2048",
+      "run_name": "owt_boundary_bs64_l4_d2048_lr1p5e-03",
+      "d_model": 2048,
+      "num_layers": 4,
+      "num_heads": 64,
+      "d_ff": 5376,
+      "batch_size": 64
+    },
+    {
+      "name": "width_l4_d2560",
+      "run_name": "owt_boundary_bs64_l4_d2560_lr1p5e-03",
+      "d_model": 2560,
+      "num_layers": 4,
+      "num_heads": 80,
+      "d_ff": 6720,
+      "batch_size": 64
+    },
+    {
+      "name": "iso_l8_d1024",
+      "run_name": "owt_boundary_bs64_l8_d1024_lr1p5e-03",
+      "d_model": 1024,
+      "num_layers": 8,
+      "num_heads": 32,
+      "d_ff": 2688,
+      "batch_size": 64
+    },
+    {
+      "name": "iso_l12_d1280",
+      "run_name": "owt_boundary_bs64_l12_d1280_lr1p5e-03",
+      "d_model": 1280,
+      "num_layers": 12,
+      "num_heads": 40,
+      "d_ff": 3360,
+      "batch_size": 64
+    },
+    {
+      "name": "iso_l16_d1536",
+      "run_name": "owt_boundary_bs64_l16_d1536_lr1p5e-03",
+      "d_model": 1536,
+      "num_layers": 16,
+      "num_heads": 48,
+      "d_ff": 4032,
+      "batch_size": 64
+    }
+  ]
+}

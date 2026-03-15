@@ -76,6 +76,12 @@ class DiagnosticsMetrics:
     grad_norm_pre_clip: float
     grad_norm_post_clip: float
     param_norm: float
+    cuda_free_bytes: int | None
+    cuda_total_bytes: int | None
+    cuda_allocated_bytes: int | None
+    cuda_reserved_bytes: int | None
+    cuda_max_allocated_bytes: int | None
+    cuda_max_reserved_bytes: int | None
 
 
 @dataclass
@@ -239,6 +245,55 @@ def global_param_norm(parameters: list[torch.nn.Parameter]) -> float:
     return param_norm_sq**0.5
 
 
+def resolve_cuda_device_index(device: torch.device) -> int | None:
+    if device.type != "cuda" or not torch.cuda.is_available():
+        return None
+    if device.index is not None:
+        return int(device.index)
+    return int(torch.cuda.current_device())
+
+
+def maybe_reset_peak_memory_stats(device_index: int | None) -> None:
+    if device_index is None:
+        return
+
+    try:
+        torch.cuda.reset_peak_memory_stats(device_index)
+        return
+    except (RuntimeError, TypeError):
+        pass
+
+    try:
+        torch.cuda.reset_peak_memory_stats()
+    except (RuntimeError, TypeError):
+        # Some remote PyTorch builds reject both signatures; keep training runnable
+        # and rely on non-reset peak stats instead of failing the run.
+        pass
+
+
+def capture_cuda_memory_snapshot(device: torch.device) -> dict[str, int | None]:
+    device_index = resolve_cuda_device_index(device)
+    if device_index is None:
+        return {
+            "cuda_free_bytes": None,
+            "cuda_total_bytes": None,
+            "cuda_allocated_bytes": None,
+            "cuda_reserved_bytes": None,
+            "cuda_max_allocated_bytes": None,
+            "cuda_max_reserved_bytes": None,
+        }
+
+    free_bytes, total_bytes = torch.cuda.mem_get_info(device_index)
+    return {
+        "cuda_free_bytes": int(free_bytes),
+        "cuda_total_bytes": int(total_bytes),
+        "cuda_allocated_bytes": int(torch.cuda.memory_allocated(device_index)),
+        "cuda_reserved_bytes": int(torch.cuda.memory_reserved(device_index)),
+        "cuda_max_allocated_bytes": int(torch.cuda.max_memory_allocated(device_index)),
+        "cuda_max_reserved_bytes": int(torch.cuda.max_memory_reserved(device_index)),
+    }
+
+
 def resolve_log_dir(*, requested_log_dir: Path | None, run_name: str) -> Path:
     if requested_log_dir is not None:
         return requested_log_dir
@@ -399,6 +454,9 @@ def main() -> None:
     dtype = resolve_dtype(args.dtype)
     np.random.seed(args.seed)
     torch.manual_seed(args.seed)
+    model_device = torch.device(args.device)
+    cuda_device_index = resolve_cuda_device_index(model_device)
+    maybe_reset_peak_memory_stats(cuda_device_index)
 
     model = TransformerLM(
         vocab_size=args.vocab_size,
@@ -412,7 +470,7 @@ def main() -> None:
         position_encoding=args.position_encoding,
         ffn_variant=args.ffn_variant,
         use_final_norm=not args.disable_final_norm,
-        device=torch.device(args.device),
+        device=model_device,
         dtype=dtype,
     )
     optimizer = AdamW(
@@ -493,6 +551,7 @@ def main() -> None:
         if completed_steps % args.eval_interval == 0:
             wallclock_seconds = time.perf_counter() - start_time
             tokens_seen = completed_steps * args.batch_size * args.context_length
+            cuda_memory = capture_cuda_memory_snapshot(model_device)
             diagnostics = DiagnosticsMetrics(
                 run_name=run_name,
                 timestamp_utc=datetime.now(timezone.utc).isoformat(),
@@ -503,6 +562,12 @@ def main() -> None:
                 grad_norm_pre_clip=grad_norm_pre_clip,
                 grad_norm_post_clip=grad_norm_post_clip,
                 param_norm=param_norm,
+                cuda_free_bytes=cuda_memory["cuda_free_bytes"],
+                cuda_total_bytes=cuda_memory["cuda_total_bytes"],
+                cuda_allocated_bytes=cuda_memory["cuda_allocated_bytes"],
+                cuda_reserved_bytes=cuda_memory["cuda_reserved_bytes"],
+                cuda_max_allocated_bytes=cuda_memory["cuda_max_allocated_bytes"],
+                cuda_max_reserved_bytes=cuda_memory["cuda_max_reserved_bytes"],
             )
             train_metrics = evaluate_loss(
                 model=model,
@@ -541,6 +606,16 @@ def main() -> None:
                 f"grad_post={diagnostics.grad_norm_post_clip:.6f} "
                 f"param_norm={diagnostics.param_norm:.6f}"
             )
+            if diagnostics.cuda_total_bytes is not None:
+                gib = float(1024**3)
+                print(
+                    f"step={diagnostics.step} cuda_mem "
+                    f"free={diagnostics.cuda_free_bytes / gib:.2f}GiB "
+                    f"allocated={diagnostics.cuda_allocated_bytes / gib:.2f}GiB "
+                    f"reserved={diagnostics.cuda_reserved_bytes / gib:.2f}GiB "
+                    f"peak_reserved={diagnostics.cuda_max_reserved_bytes / gib:.2f}GiB "
+                    f"total={diagnostics.cuda_total_bytes / gib:.2f}GiB"
+                )
 
             for metrics in (train_metrics, val_metrics):
                 append_jsonl(metrics_path, asdict(metrics))
@@ -580,6 +655,27 @@ def main() -> None:
                     diagnostics.param_norm,
                     completed_steps,
                 )
+                if diagnostics.cuda_total_bytes is not None:
+                    writer.add_scalar(
+                        "cuda/free_bytes",
+                        diagnostics.cuda_free_bytes,
+                        completed_steps,
+                    )
+                    writer.add_scalar(
+                        "cuda/allocated_bytes",
+                        diagnostics.cuda_allocated_bytes,
+                        completed_steps,
+                    )
+                    writer.add_scalar(
+                        "cuda/reserved_bytes",
+                        diagnostics.cuda_reserved_bytes,
+                        completed_steps,
+                    )
+                    writer.add_scalar(
+                        "cuda/max_reserved_bytes",
+                        diagnostics.cuda_max_reserved_bytes,
+                        completed_steps,
+                    )
                 writer.flush()
 
             if best_val_loss is None or val_metrics.loss < best_val_loss:
