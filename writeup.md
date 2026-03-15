@@ -559,10 +559,27 @@ There are several reasons the output quality is worse despite using the same arc
 
 **Answer:**
 
+My final leaderboard recipe was a staged continuation recipe on OpenWebText. I first trained a stronger `8 x 1024` backbone (`8` layers, `d_model=1024`, `d_ff=2688`, `32` heads) with `context_length=256` and `batch_size=64`. I then continued from its best checkpoint with a larger context window and a smaller batch size, using `context_length=640`, `batch_size=32`, and a retuned continuation learning rate of about `1.7e-3`. The best validation loss I obtained from this recipe was `3.6146` at training step `14200`.
+
+All wall-clock numbers reported here are the raw measurements from my H800 runs. Because the assignment specifies an H100 budget but does not provide an official H800-to-H100 conversion rule, I report the measured H800 wall-clock transparently and avoid claiming an exact normalized H100-hour equivalence for this staged recipe.
+
+The decision process was staged. I first strengthened the OpenWebText baseline, then compared wider/deeper model variants under short matched-budget pilots. Those runs showed that extra depth alone was not cost-effective, while a wider model around `d_model=1024` was much more promising. After a coarse learning-rate sweep, the `8 x 1024` backbone became the main line. I then used continuation probes to map the context-length frontier: increasing context was useful, but only when I reduced batch size enough to fit in memory. This led to the final `ctx640, bs32` continuation setting. I also checked a smaller-model control line with longer context, but it never became competitive, which suggested that the gain came from combining a stronger backbone with a larger usable context window.
+
+The figure below shows the full staged training curve with cumulative wall-clock time. The first stage (`ctx256`, `bs64`) steadily improves validation loss until it reaches `3.7254` at step `12400`. The second stage (`ctx640`, `bs32`) starts from that checkpoint and quickly gives an additional drop, reaching the overall best value `3.6146` at step `14200` after `10355.5` seconds of cumulative H800 wall-clock time. The key qualitative feature is that most of the gain from the second stage arrives early, after which the loss oscillates instead of improving monotonically. In other words, increasing the effective context on top of the stronger backbone was clearly useful, but the best checkpoint occurred before the end of the continuation rather than at the final step.
+
+This result should be interpreted as a leaderboard-oriented continuation recipe rather than as a single uninterrupted from-scratch run. I think it is still informative because the final recipe came from a consistent sequence of small controlled decisions, and the final staged curve shows clearly where the additional gain came from.
+
+![Validation loss versus cumulative wall-clock time for the final staged leaderboard recipe. The two colors correspond to the initial `ctx256, bs64` training stage and the subsequent `ctx640, bs32` continuation stage.](artifacts/experiments/leaderboard/figures/leaderboard_ctx640_bs32_segmented_recipe/val_loss_vs_wallclock.png)
+
 ---
 
 ## Appendix: Evidence Index
 - Curves:
+  - `artifacts/experiments/leaderboard/figures/leaderboard_ctx640_bs32_segmented_recipe/val_loss_vs_wallclock.png`
+  - `artifacts/experiments/leaderboard/figures/leaderboard_ctx640_bs32_segmented_recipe/val_loss_vs_step.png`
 - Tables:
+  - `artifacts/experiments/leaderboard/figures/leaderboard_ctx640_bs32_segmented_recipe/val_loss_summary.md`
 - Key logs:
+  - `artifacts/experiments/leaderboard/figures/leaderboard_ctx640_bs32_segmented_recipe/val_loss_summary.md`
 - Notes:
+  - `artifacts/experiments/leaderboard/README.md`

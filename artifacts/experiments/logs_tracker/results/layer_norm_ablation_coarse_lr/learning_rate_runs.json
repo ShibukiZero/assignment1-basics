@@ -8,10 +8,7 @@
     "total_wallclock_seconds": 240.63522623106837,
     "summary_path": ".agents/logs/tinystories_no_norm_bs128_lrscan_lr1p0e-03/summary.json",
     "artifact_run_dir": "artifacts/experiments/logs_tracker/results/layer_norm_ablation_coarse_lr/runs/tinystories_no_norm_bs128_lrscan_lr1p0e-03",
-    "artifact_metrics_jsonl": "artifacts/experiments/logs_tracker/results/layer_norm_ablation_coarse_lr/runs/tinystories_no_norm_bs128_lrscan_lr1p0e-03/metrics.jsonl",
-    "artifact_summary_json": "artifacts/experiments/logs_tracker/results/layer_norm_ablation_coarse_lr/runs/tinystories_no_norm_bs128_lrscan_lr1p0e-03/summary.json",
-    "artifact_diagnostics_jsonl": "artifacts/experiments/logs_tracker/results/layer_norm_ablation_coarse_lr/runs/tinystories_no_norm_bs128_lrscan_lr1p0e-03/diagnostics.jsonl",
-    "artifact_config_json": "artifacts/experiments/logs_tracker/results/layer_norm_ablation_coarse_lr/runs/tinystories_no_norm_bs128_lrscan_lr1p0e-03/config.json"
+    "artifact_summary_json": "artifacts/experiments/logs_tracker/results/layer_norm_ablation_coarse_lr/runs/tinystories_no_norm_bs128_lrscan_lr1p0e-03/summary.json"
   },
   {
     "run_name": "tinystories_no_norm_bs128_lrscan_lr1p5e-03",
@@ -22,10 +19,7 @@
     "total_wallclock_seconds": 239.8928501084447,
     "summary_path": ".agents/logs/tinystories_no_norm_bs128_lrscan_lr1p5e-03/summary.json",
     "artifact_run_dir": "artifacts/experiments/logs_tracker/results/layer_norm_ablation_coarse_lr/runs/tinystories_no_norm_bs128_lrscan_lr1p5e-03",
-    "artifact_metrics_jsonl": "artifacts/experiments/logs_tracker/results/layer_norm_ablation_coarse_lr/runs/tinystories_no_norm_bs128_lrscan_lr1p5e-03/metrics.jsonl",
-    "artifact_summary_json": "artifacts/experiments/logs_tracker/results/layer_norm_ablation_coarse_lr/runs/tinystories_no_norm_bs128_lrscan_lr1p5e-03/summary.json",
-    "artifact_diagnostics_jsonl": "artifacts/experiments/logs_tracker/results/layer_norm_ablation_coarse_lr/runs/tinystories_no_norm_bs128_lrscan_lr1p5e-03/diagnostics.jsonl",
-    "artifact_config_json": "artifacts/experiments/logs_tracker/results/layer_norm_ablation_coarse_lr/runs/tinystories_no_norm_bs128_lrscan_lr1p5e-03/config.json"
+    "artifact_summary_json": "artifacts/experiments/logs_tracker/results/layer_norm_ablation_coarse_lr/runs/tinystories_no_norm_bs128_lrscan_lr1p5e-03/summary.json"
   },
   {
     "run_name": "tinystories_no_norm_bs128_lrscan_lr2p0e-03",
@@ -36,10 +30,7 @@
     "total_wallclock_seconds": 238.82223293930292,
     "summary_path": ".agents/logs/tinystories_no_norm_bs128_lrscan_lr2p0e-03/summary.json",
     "artifact_run_dir": "artifacts/experiments/logs_tracker/results/layer_norm_ablation_coarse_lr/runs/tinystories_no_norm_bs128_lrscan_lr2p0e-03",
-    "artifact_metrics_jsonl": "artifacts/experiments/logs_tracker/results/layer_norm_ablation_coarse_lr/runs/tinystories_no_norm_bs128_lrscan_lr2p0e-03/metrics.jsonl",
-    "artifact_summary_json": "artifacts/experiments/logs_tracker/results/layer_norm_ablation_coarse_lr/runs/tinystories_no_norm_bs128_lrscan_lr2p0e-03/summary.json",
-    "artifact_diagnostics_jsonl": "artifacts/experiments/logs_tracker/results/layer_norm_ablation_coarse_lr/runs/tinystories_no_norm_bs128_lrscan_lr2p0e-03/diagnostics.jsonl",
-    "artifact_config_json": "artifacts/experiments/logs_tracker/results/layer_norm_ablation_coarse_lr/runs/tinystories_no_norm_bs128_lrscan_lr2p0e-03/config.json"
+    "artifact_summary_json": "artifacts/experiments/logs_tracker/results/layer_norm_ablation_coarse_lr/runs/tinystories_no_norm_bs128_lrscan_lr2p0e-03/summary.json"
   },
   {
     "run_name": "tinystories_no_norm_bs128_lrscan_lr2p5e-03",
@@ -50,10 +41,7 @@
     "total_wallclock_seconds": 237.8455633148551,
     "summary_path": ".agents/logs/tinystories_no_norm_bs128_lrscan_lr2p5e-03/summary.json",
     "artifact_run_dir": "artifacts/experiments/logs_tracker/results/layer_norm_ablation_coarse_lr/runs/tinystories_no_norm_bs128_lrscan_lr2p5e-03",
-    "artifact_metrics_jsonl": "artifacts/experiments/logs_tracker/results/layer_norm_ablation_coarse_lr/runs/tinystories_no_norm_bs128_lrscan_lr2p5e-03/metrics.jsonl",
-    "artifact_summary_json": "artifacts/experiments/logs_tracker/results/layer_norm_ablation_coarse_lr/runs/tinystories_no_norm_bs128_lrscan_lr2p5e-03/summary.json",
-    "artifact_diagnostics_jsonl": "artifacts/experiments/logs_tracker/results/layer_norm_ablation_coarse_lr/runs/tinystories_no_norm_bs128_lrscan_lr2p5e-03/diagnostics.jsonl",
-    "artifact_config_json": "artifacts/experiments/logs_tracker/results/layer_norm_ablation_coarse_lr/runs/tinystories_no_norm_bs128_lrscan_lr2p5e-03/config.json"
+    "artifact_summary_json": "artifacts/experiments/logs_tracker/results/layer_norm_ablation_coarse_lr/runs/tinystories_no_norm_bs128_lrscan_lr2p5e-03/summary.json"
   },
   {
     "run_name": "tinystories_no_norm_bs128_lrscan_lr3p0e-03",
@@ -64,9 +52,6 @@
     "total_wallclock_seconds": 237.81772315502167,
     "summary_path": ".agents/logs/tinystories_no_norm_bs128_lrscan_lr3p0e-03/summary.json",
     "artifact_run_dir": "artifacts/experiments/logs_tracker/results/layer_norm_ablation_coarse_lr/runs/tinystories_no_norm_bs128_lrscan_lr3p0e-03",
-    "artifact_metrics_jsonl": "artifacts/experiments/logs_tracker/results/layer_norm_ablation_coarse_lr/runs/tinystories_no_norm_bs128_lrscan_lr3p0e-03/metrics.jsonl",
-    "artifact_summary_json": "artifacts/experiments/logs_tracker/results/layer_norm_ablation_coarse_lr/runs/tinystories_no_norm_bs128_lrscan_lr3p0e-03/summary.json",
-    "artifact_diagnostics_jsonl": "artifacts/experiments/logs_tracker/results/layer_norm_ablation_coarse_lr/runs/tinystories_no_norm_bs128_lrscan_lr3p0e-03/diagnostics.jsonl",
-    "artifact_config_json": "artifacts/experiments/logs_tracker/results/layer_norm_ablation_coarse_lr/runs/tinystories_no_norm_bs128_lrscan_lr3p0e-03/config.json"
+    "artifact_summary_json": "artifacts/experiments/logs_tracker/results/layer_norm_ablation_coarse_lr/runs/tinystories_no_norm_bs128_lrscan_lr3p0e-03/summary.json"
   }
 ]

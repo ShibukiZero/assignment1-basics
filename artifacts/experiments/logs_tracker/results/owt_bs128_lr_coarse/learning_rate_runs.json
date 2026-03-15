@@ -8,10 +8,7 @@
     "total_wallclock_seconds": 146.33861132711172,
     "summary_path": ".agents/logs/owt_bs128_lr_coarse_lr5p0e-04/summary.json",
     "artifact_run_dir": "artifacts/experiments/logs_tracker/results/owt_bs128_lr_coarse/runs/owt_bs128_lr_coarse_lr5p0e-04",
-    "artifact_metrics_jsonl": "artifacts/experiments/logs_tracker/results/owt_bs128_lr_coarse/runs/owt_bs128_lr_coarse_lr5p0e-04/metrics.jsonl",
-    "artifact_summary_json": "artifacts/experiments/logs_tracker/results/owt_bs128_lr_coarse/runs/owt_bs128_lr_coarse_lr5p0e-04/summary.json",
-    "artifact_diagnostics_jsonl": "artifacts/experiments/logs_tracker/results/owt_bs128_lr_coarse/runs/owt_bs128_lr_coarse_lr5p0e-04/diagnostics.jsonl",
-    "artifact_config_json": "artifacts/experiments/logs_tracker/results/owt_bs128_lr_coarse/runs/owt_bs128_lr_coarse_lr5p0e-04/config.json"
+    "artifact_summary_json": "artifacts/experiments/logs_tracker/results/owt_bs128_lr_coarse/runs/owt_bs128_lr_coarse_lr5p0e-04/summary.json"
   },
   {
     "run_name": "owt_bs128_lr_coarse_lr1p0e-03",
@@ -22,10 +19,7 @@
     "total_wallclock_seconds": 146.4877453893423,
     "summary_path": ".agents/logs/owt_bs128_lr_coarse_lr1p0e-03/summary.json",
     "artifact_run_dir": "artifacts/experiments/logs_tracker/results/owt_bs128_lr_coarse/runs/owt_bs128_lr_coarse_lr1p0e-03",
-    "artifact_metrics_jsonl": "artifacts/experiments/logs_tracker/results/owt_bs128_lr_coarse/runs/owt_bs128_lr_coarse_lr1p0e-03/metrics.jsonl",
-    "artifact_summary_json": "artifacts/experiments/logs_tracker/results/owt_bs128_lr_coarse/runs/owt_bs128_lr_coarse_lr1p0e-03/summary.json",
-    "artifact_diagnostics_jsonl": "artifacts/experiments/logs_tracker/results/owt_bs128_lr_coarse/runs/owt_bs128_lr_coarse_lr1p0e-03/diagnostics.jsonl",
-    "artifact_config_json": "artifacts/experiments/logs_tracker/results/owt_bs128_lr_coarse/runs/owt_bs128_lr_coarse_lr1p0e-03/config.json"
+    "artifact_summary_json": "artifacts/experiments/logs_tracker/results/owt_bs128_lr_coarse/runs/owt_bs128_lr_coarse_lr1p0e-03/summary.json"
   },
   {
     "run_name": "owt_bs128_lr_coarse_lr2p0e-03",
@@ -36,10 +30,7 @@
     "total_wallclock_seconds": 146.44104056805372,
     "summary_path": ".agents/logs/owt_bs128_lr_coarse_lr2p0e-03/summary.json",
     "artifact_run_dir": "artifacts/experiments/logs_tracker/results/owt_bs128_lr_coarse/runs/owt_bs128_lr_coarse_lr2p0e-03",
-    "artifact_metrics_jsonl": "artifacts/experiments/logs_tracker/results/owt_bs128_lr_coarse/runs/owt_bs128_lr_coarse_lr2p0e-03/metrics.jsonl",
-    "artifact_summary_json": "artifacts/experiments/logs_tracker/results/owt_bs128_lr_coarse/runs/owt_bs128_lr_coarse_lr2p0e-03/summary.json",
-    "artifact_diagnostics_jsonl": "artifacts/experiments/logs_tracker/results/owt_bs128_lr_coarse/runs/owt_bs128_lr_coarse_lr2p0e-03/diagnostics.jsonl",
-    "artifact_config_json": "artifacts/experiments/logs_tracker/results/owt_bs128_lr_coarse/runs/owt_bs128_lr_coarse_lr2p0e-03/config.json"
+    "artifact_summary_json": "artifacts/experiments/logs_tracker/results/owt_bs128_lr_coarse/runs/owt_bs128_lr_coarse_lr2p0e-03/summary.json"
   },
   {
     "run_name": "owt_bs128_lr_coarse_lr3p0e-03",
@@ -50,10 +41,7 @@
     "total_wallclock_seconds": 146.54672747850418,
     "summary_path": ".agents/logs/owt_bs128_lr_coarse_lr3p0e-03/summary.json",
     "artifact_run_dir": "artifacts/experiments/logs_tracker/results/owt_bs128_lr_coarse/runs/owt_bs128_lr_coarse_lr3p0e-03",
-    "artifact_metrics_jsonl": "artifacts/experiments/logs_tracker/results/owt_bs128_lr_coarse/runs/owt_bs128_lr_coarse_lr3p0e-03/metrics.jsonl",
-    "artifact_summary_json": "artifacts/experiments/logs_tracker/results/owt_bs128_lr_coarse/runs/owt_bs128_lr_coarse_lr3p0e-03/summary.json",
-    "artifact_diagnostics_jsonl": "artifacts/experiments/logs_tracker/results/owt_bs128_lr_coarse/runs/owt_bs128_lr_coarse_lr3p0e-03/diagnostics.jsonl",
-    "artifact_config_json": "artifacts/experiments/logs_tracker/results/owt_bs128_lr_coarse/runs/owt_bs128_lr_coarse_lr3p0e-03/config.json"
+    "artifact_summary_json": "artifacts/experiments/logs_tracker/results/owt_bs128_lr_coarse/runs/owt_bs128_lr_coarse_lr3p0e-03/summary.json"
   },
   {
     "run_name": "owt_bs128_lr_coarse_lr4p0e-03",
@@ -64,10 +52,7 @@
     "total_wallclock_seconds": 146.52646559849381,
     "summary_path": ".agents/logs/owt_bs128_lr_coarse_lr4p0e-03/summary.json",
     "artifact_run_dir": "artifacts/experiments/logs_tracker/results/owt_bs128_lr_coarse/runs/owt_bs128_lr_coarse_lr4p0e-03",
-    "artifact_metrics_jsonl": "artifacts/experiments/logs_tracker/results/owt_bs128_lr_coarse/runs/owt_bs128_lr_coarse_lr4p0e-03/metrics.jsonl",
-    "artifact_summary_json": "artifacts/experiments/logs_tracker/results/owt_bs128_lr_coarse/runs/owt_bs128_lr_coarse_lr4p0e-03/summary.json",
-    "artifact_diagnostics_jsonl": "artifacts/experiments/logs_tracker/results/owt_bs128_lr_coarse/runs/owt_bs128_lr_coarse_lr4p0e-03/diagnostics.jsonl",
-    "artifact_config_json": "artifacts/experiments/logs_tracker/results/owt_bs128_lr_coarse/runs/owt_bs128_lr_coarse_lr4p0e-03/config.json"
+    "artifact_summary_json": "artifacts/experiments/logs_tracker/results/owt_bs128_lr_coarse/runs/owt_bs128_lr_coarse_lr4p0e-03/summary.json"
   },
   {
     "run_name": "owt_bs128_lr_coarse_lr6p0e-03",
@@ -78,9 +63,6 @@
     "total_wallclock_seconds": 147.04140986129642,
     "summary_path": ".agents/logs/owt_bs128_lr_coarse_lr6p0e-03/summary.json",
     "artifact_run_dir": "artifacts/experiments/logs_tracker/results/owt_bs128_lr_coarse/runs/owt_bs128_lr_coarse_lr6p0e-03",
-    "artifact_metrics_jsonl": "artifacts/experiments/logs_tracker/results/owt_bs128_lr_coarse/runs/owt_bs128_lr_coarse_lr6p0e-03/metrics.jsonl",
-    "artifact_summary_json": "artifacts/experiments/logs_tracker/results/owt_bs128_lr_coarse/runs/owt_bs128_lr_coarse_lr6p0e-03/summary.json",
-    "artifact_diagnostics_jsonl": "artifacts/experiments/logs_tracker/results/owt_bs128_lr_coarse/runs/owt_bs128_lr_coarse_lr6p0e-03/diagnostics.jsonl",
-    "artifact_config_json": "artifacts/experiments/logs_tracker/results/owt_bs128_lr_coarse/runs/owt_bs128_lr_coarse_lr6p0e-03/config.json"
+    "artifact_summary_json": "artifacts/experiments/logs_tracker/results/owt_bs128_lr_coarse/runs/owt_bs128_lr_coarse_lr6p0e-03/summary.json"
   }
 ]

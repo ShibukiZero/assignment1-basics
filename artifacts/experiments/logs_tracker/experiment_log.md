@@ -20,6 +20,7 @@ Relevant implementation points:
 - metrics are emitted during training at every evaluation interval
 - each record includes both `step` and `wallclock_seconds`, so all learning curves can be plotted against either x-axis
 - the same logging path is used for TinyStories, OpenWebText, learning-rate sweeps, batch-size sweeps, and architecture ablations
+- copied run metadata may retain original remote paths such as `.agents/logs/...` or `/root/...`; for repository-local references, prefer the `artifact_*` fields and the files linked under `artifacts/experiments/logs_tracker/`
 
 ## Durable result layout
 
@@ -28,7 +29,11 @@ Durable Chapter 7 artifacts are stored under:
 - `artifacts/experiments/logs_tracker/results/`
 - `artifacts/experiments/logs_tracker/figures/`
 
-The `results/` directory stores copied lightweight run artifacts and machine-readable summaries. The `figures/` directory stores writeup-facing plots generated from those summaries.
+The `results/` directory stores copied run-summary snapshots and machine-readable
+summaries. The `figures/` directory stores writeup-facing plots generated from
+those summaries.
+Repository-local durable evidence always lives under those two directories, even
+when copied JSON metadata still mentions the original remote execution paths.
 
 ## Experiment ledger
 
@@ -171,7 +176,7 @@ What was tried:
 
 Where to find the results:
 - main-run summary: `artifacts/experiments/logs_tracker/results/owt_main_bs128_lr2p5e-03/owt_main_run_summary.md`
-- copied run artifacts: `artifacts/experiments/logs_tracker/results/owt_main_bs128_lr2p5e-03/run/`
+- retained run summary snapshot: `artifacts/experiments/logs_tracker/results/owt_main_bs128_lr2p5e-03/run/summary.json`
 - comparison figure: `artifacts/experiments/logs_tracker/figures/tinystories_vs_owt_bs128_main/val_loss_vs_step.png`
 - comparison figure: `artifacts/experiments/logs_tracker/figures/tinystories_vs_owt_bs128_main/val_loss_vs_wallclock.png`
 - comparison summary: `artifacts/experiments/logs_tracker/figures/tinystories_vs_owt_bs128_main/val_loss_summary.md`
@@ -198,15 +203,18 @@ Outcome used in the writeup:
 
 ## How to trace an individual run
 
-For any run copied into `results/.../runs/` or `results/.../run/`, the typical files are:
+For any run copied into `results/.../runs/` or `results/.../run/`, the retained
+submission-facing file is:
 
-- `config.json`
-- `metrics.jsonl`
-- `diagnostics.jsonl`
 - `summary.json`
 
-These are the canonical inputs used by the plotting scripts under `artifacts/experiments/logs_tracker/plot_*.py`.
+The heavier `config.json`, `metrics.jsonl`, and `diagnostics.jsonl` files were
+useful during exploration but are intentionally omitted from the slimmed tracked
+repository once their information is captured in the aggregated summaries and
+final figures.
 
 ## Submission intent
 
-This file is the narrative experiment log requested by the handout. The detailed numerical evidence remains in the structured summaries, per-run JSONL files, and plotted figures linked above.
+This file is the narrative experiment log requested by the handout. The detailed
+numerical evidence remains in the structured summaries, retained per-run
+`summary.json` snapshots, and plotted figures linked above.

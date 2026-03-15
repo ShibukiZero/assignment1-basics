@@ -11,8 +11,5 @@
     0.0035
   ],
   "artifact_run_dir": "artifacts/experiments/logs_tracker/results/owt_bs128_lr_coarse/runs/owt_bs128_lr_coarse_lr2p0e-03",
-  "artifact_metrics_path": "artifacts/experiments/logs_tracker/results/owt_bs128_lr_coarse/runs/owt_bs128_lr_coarse_lr2p0e-03/metrics.jsonl",
-  "artifact_summary_path": "artifacts/experiments/logs_tracker/results/owt_bs128_lr_coarse/runs/owt_bs128_lr_coarse_lr2p0e-03/summary.json",
-  "artifact_diagnostics_path": "artifacts/experiments/logs_tracker/results/owt_bs128_lr_coarse/runs/owt_bs128_lr_coarse_lr2p0e-03/diagnostics.jsonl",
-  "artifact_config_path": "artifacts/experiments/logs_tracker/results/owt_bs128_lr_coarse/runs/owt_bs128_lr_coarse_lr2p0e-03/config.json"
+  "artifact_summary_path": "artifacts/experiments/logs_tracker/results/owt_bs128_lr_coarse/runs/owt_bs128_lr_coarse_lr2p0e-03/summary.json"
 }
