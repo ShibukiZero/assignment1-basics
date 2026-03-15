@@ -12,3 +12,7 @@ Each run directory contains:
 - `merges.json`: serialized BPE merge list
 
 Some run directories also include local logs or profiling outputs.
+The tracked `report.json` files preserve the original execution provenance, so
+fields such as `input_path` or `output_dir` may still refer to `.agents/logs/...`
+or remote `/root/...` paths. In this repository, the durable tokenizer outputs
+are the files stored inside each tracked run directory.

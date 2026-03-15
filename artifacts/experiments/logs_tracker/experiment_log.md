@@ -20,6 +20,7 @@ Relevant implementation points:
 - metrics are emitted during training at every evaluation interval
 - each record includes both `step` and `wallclock_seconds`, so all learning curves can be plotted against either x-axis
 - the same logging path is used for TinyStories, OpenWebText, learning-rate sweeps, batch-size sweeps, and architecture ablations
+- copied run metadata may retain original remote paths such as `.agents/logs/...` or `/root/...`; for repository-local references, prefer the `artifact_*` fields and the files linked under `artifacts/experiments/logs_tracker/`
 
 ## Durable result layout
 
@@ -29,6 +30,8 @@ Durable Chapter 7 artifacts are stored under:
 - `artifacts/experiments/logs_tracker/figures/`
 
 The `results/` directory stores copied lightweight run artifacts and machine-readable summaries. The `figures/` directory stores writeup-facing plots generated from those summaries.
+Repository-local durable evidence always lives under those two directories, even
+when copied JSON metadata still mentions the original remote execution paths.
 
 ## Experiment ledger
 

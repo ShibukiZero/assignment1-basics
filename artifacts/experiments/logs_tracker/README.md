@@ -11,6 +11,15 @@ This directory should not contain experiment runner scripts. Training / sweep ex
 - `cs336_basics/experiments/`
 - `cs336_basics/experiments/sweep_configs/`
 
+Copied `config.json`, `summary.json`, and generation metadata in this directory
+preserve original run-time provenance from the remote execution environment.
+Fields such as `log_dir`, `summary_path`, `output_dir`, `tensorboard_dir`,
+`checkpoint_path`, and `config_path` may therefore point to `.agents/logs/...`
+or `/root/...` locations that are not part of the tracked repository. Treat
+those fields as historical context only; the durable in-repo evidence is the
+corresponding file under `artifacts/experiments/logs_tracker/` and any
+`artifact_*` fields that explicitly point back into this directory.
+
 Current structure:
 - `plot_*.py`: plotting entrypoints
 - `results/`: summarized outputs and persisted lightweight run artifacts copied from temporary logs
