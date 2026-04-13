@@ -164,3 +164,4 @@ cython_debug/
 .agents/
 .ai/
 AGENTS.md
+.DS_Store
