@@ -13,7 +13,7 @@
 **Answer:** Its string representation is the escaped form (e.g., `'\x00'`), while printing it outputs an invisible control character.
 
 ### (c)
-**Question:** What happens when this character occurs in text?  
+**Question:** What happens when this character occurs in text? It may be helpful to play around with the following in your Python interpreter and see if it matches your expectations: `chr(0)`, `print(chr(0))`, `"this is a test" + chr(0) + "string"`, and `print("this is a test" + chr(0) + "string")`.  
 **Deliverable:** A one-sentence response.
 
 **Answer:** When this character appears in text, it is invisible to readers and can cause issues in systems that treat null bytes as terminators or control characters.
@@ -23,26 +23,26 @@
 ## Problem `unicode2`: Unicode Encodings (3 points)
 
 ### (a)
-**Question:** What are some reasons to prefer training our tokenizer on UTF-8 encoded bytes, rather than UTF-16 or UTF-32?  
+**Question:** What are some reasons to prefer training our tokenizer on UTF-8 encoded bytes, rather than UTF-16 or UTF-32? It may be helpful to compare the output of these encodings for various input strings.  
 **Deliverable:** A one-to-two sentence response.
 
 **Answer:** UTF-8 is already widely used across modern systems, operating systems, and applications, so training on UTF-8 data usually leads to fewer compatibility issues in real pipelines. Compared with UTF-16 or UTF-32, UTF-8 also tends to be a more practical compression tradeoff for mixed-language text (for example, many English characters use one byte while many Chinese characters use three bytes), which is often more suitable for tokenizer and model training.
 
 ### (b)
-**Question:** Consider the following (incorrect) function intended to decode a UTF-8 byte string into a Unicode string. Why is this function incorrect? Provide an example input byte string that yields incorrect results.
+**Question:** Consider the following (incorrect) function, which is intended to decode a UTF-8 byte string into a Unicode string. Why is this function incorrect? Provide an example of an input byte string that yields incorrect results.
 
 ```python
 def decode_utf8_bytes_to_str_wrong(bytestring):
     return "".join([bytes([b]).decode("utf-8") for b in bytestring])
 ```
 
-**Deliverable:** An example input byte string for which `decode_utf8_bytes_to_str_wrong` produces incorrect output, with a one-sentence explanation.
+**Deliverable:** An example input byte string for which `decode_utf8_bytes_to_str_wrong` produces incorrect output, with a one-sentence explanation of why the function is incorrect.
 
 **Answer (example bytes):** `b'\xe6\xb1\x89'`  
 **Answer (explanation):** This function is incorrect because it decodes UTF-8 one byte at a time; for multi-byte characters such as `汉` (`b'\xe6\xb1\x89'`), the bytes must be decoded together, otherwise it raises a `UnicodeDecodeError` or produces incorrect decoding behavior.
 
 ### (c)
-**Question:** Give a two-byte sequence that does not decode to any Unicode character(s).  
+**Question:** Give a two byte sequence that does not decode to any Unicode character(s).  
 **Deliverable:** An example, with a one-sentence explanation.
 
 **Answer (example bytes):** `b'\xff\xff'`  
@@ -53,14 +53,14 @@ def decode_utf8_bytes_to_str_wrong(bytestring):
 ## Problem `train_bpe_tinystories`: BPE Training on TinyStories (2 points)
 
 ### (a)
-**Question:** Train a byte-level BPE tokenizer on TinyStories with max vocab size 10,000 and include `<|endoftext|>` as a special token. Serialize vocab and merges. Report: training hours and memory usage; longest token in vocabulary; whether it makes sense.  
+**Question:** Train a byte-level BPE tokenizer on the TinyStories dataset, using a maximum vocabulary size of 10,000. Make sure to add the TinyStories `<|endoftext|>` special token to the vocabulary. Serialize the resulting vocabulary and merges to disk for further inspection. How many hours and memory did training take? What is the longest token in the vocabulary? Does it make sense?  
 **Deliverable:** A one-to-two sentence response.
 
 **Answer:**
 Training a 10,000-vocabulary byte-level BPE tokenizer on the full TinyStories training set (with `<|endoftext|>` included as a special token) took about 37.65 seconds (about 0.0105 hours), with peak main-process RSS around 0.233 GB. The longest token was `" responsibility"` (15 bytes), which is plausible because BPE tends to merge frequent whitespace-prefixed word pieces.
 
 ### (b)
-**Question:** Profile your code. What part of tokenizer training takes the most time?  
+**Question:** Profile your code. What part of the tokenizer training process takes the most time?  
 **Deliverable:** A one-to-two sentence response.
 
 **Answer:**
@@ -76,14 +76,14 @@ Profiling shows that after pre-tokenization parallelization, the dominant cost s
 ## Problem `train_bpe_expts_owt`: BPE Training on OpenWebText (2 points)
 
 ### (a)
-**Question:** Train a byte-level BPE tokenizer on OpenWebText with max vocab size 32,000. Serialize vocab and merges. What is the longest token in the vocabulary? Does it make sense?  
+**Question:** Train a byte-level BPE tokenizer on the OpenWebText dataset, using a maximum vocabulary size of 32,000. Serialize the resulting vocabulary and merges to disk for further inspection. What is the longest token in the vocabulary? Does it make sense?  
 **Deliverable:** A one-to-two sentence response.
 
 **Answer:**
 Training the 32,000-vocabulary byte-level BPE tokenizer on OpenWebText completed in about 19,509.0 seconds (about 5.42 hours), and the longest token is a 64-byte run of hyphens (`"----------------------------------------------------------------"`). This is reasonable for web text, where repeated punctuation sequences are common and can become frequent merge targets.
 
 ### (b)
-**Question:** Compare and contrast the tokenizer trained on TinyStories vs. the tokenizer trained on OpenWebText.  
+**Question:** Compare and contrast the tokenizer that you get training on TinyStories versus OpenWebText.  
 **Deliverable:** A one-to-two sentence response.
 
 **Answer:**
@@ -99,29 +99,28 @@ The TinyStories tokenizer (10K vocab) is more concentrated on simple narrative E
 ## Problem `tokenizer_experiments`: Experiments with tokenizers (4 points)
 
 ### (a)
-**Question:** Sample 10 documents from TinyStories and OpenWebText. Using the previously trained TinyStories (10K) and OpenWebText (32K) tokenizers, encode sampled documents. What is each tokenizer’s compression ratio (bytes/token)?  
+**Question:** Sample 10 documents from TinyStories and OpenWebText. Using your previously-trained TinyStories and OpenWebText tokenizers (10K and 32K vocabulary size, respectively), encode these sampled documents into integer IDs. What is each tokenizer’s compression ratio (bytes/token)?  
 **Deliverable:** A one-to-two sentence response.
 
 **Answer:**
 On the 10-document samples, the TinyStories tokenizer (10K) achieves 4.0112 bytes/token on the TinyStories sample and 3.4046 bytes/token on the OpenWebText sample. The OpenWebText tokenizer (32K) achieves 4.5050 bytes/token on the OpenWebText sample and 3.8672 bytes/token on the TinyStories sample.
 
 ### (b)
-**Question:** What happens if you tokenize your OpenWebText sample with the TinyStories tokenizer? Compare compression ratio and/or qualitatively describe behavior.  
+**Question:** What happens if you tokenize your OpenWebText sample with the TinyStories tokenizer? Compare the compression ratio and/or qualitatively describe what happens.  
 **Deliverable:** A one-to-two sentence response.
 
 **Answer:**
 When tokenizing OpenWebText with the TinyStories tokenizer, compression drops from 4.5050 to 3.4046 bytes/token (OpenWebText tokenizer vs. TinyStories tokenizer on the same OWT sample), and token count increases from 11,201 to 14,821 for the same 50,460 bytes. This indicates stronger segmentation/fragmentation under domain mismatch: the smaller, story-domain tokenizer has fewer useful merges for noisier web text patterns.
 
 ### (c)
-**Question:** Estimate tokenizer throughput (bytes/second). How long would it take to tokenize The Pile dataset (825GB of text)?  
+**Question:** Estimate the throughput of your tokenizer (e.g., in bytes/second). How long would it take to tokenize the Pile dataset (825GB of text)?  
 **Deliverable:** A one-to-two sentence response.
 
 **Answer:**
 Using the OpenWebText tokenizer (32K) on a 50MB OpenWebText validation slice, measured throughput is about 3,787,835 bytes/second (about 867,689 tokens/second). Extrapolating linearly to 825GB gives an estimated tokenization time of about 217,802 seconds, or 60.5 hours.
 
 ### (d)
-**Question:** Using TinyStories and OpenWebText tokenizers, encode train/dev datasets into integer IDs. We recommend serializing IDs as NumPy `uint16`. Why is `uint16` appropriate?  
-**Deliverable:** (Written explanation required for `uint16` choice.)
+**Question:** Using your TinyStories and OpenWebText tokenizers, encode the respective training and development datasets into a sequence of integer token IDs. We'll use this later to train our language model. We recommend serializing the token IDs as a NumPy array of datatype `uint16`. Why is `uint16` an appropriate choice?  
 
 **Answer:**
 `uint16` is appropriate because both tokenizer vocabularies are far below 65,536 entries (TinyStories: 10,000; OpenWebText: 32,000), so every valid token ID fits safely in 16 bits. This cuts storage roughly in half versus `int32` while still preserving exact token IDs, and our encoding pipeline explicitly checks for overflow before casting to `uint16`, so successful corpus encoding confirms the dtype is valid for these tokenizers.
@@ -131,7 +130,7 @@ Using the OpenWebText tokenizer (32K) on a 50MB OpenWebText validation slice, me
 ## Problem `transformer_accounting`: Transformer LM resource accounting (5 points)
 
 ### (a)
-**Question:** For GPT-2 XL (`vocab_size=50,257`, `context_length=1,024`, `num_layers=48`, `d_model=1,600`, `num_heads=25`, `d_ff=6,400`), how many trainable parameters does the model have? Assuming float32 parameters, how much memory is needed to load the model?  
+**Question:** Consider GPT-2 XL, which has the following configuration: `vocab_size=50,257`, `context_length=1,024`, `num_layers=48`, `d_model=1,600`, `num_heads=25`, and `d_ff=6,400`. Suppose we constructed our model using this configuration. How many trainable parameters would our model have? Assuming each parameter is represented using single-precision floating point, how much memory is required to just load this model?  
 **Deliverable:** A one-to-two sentence response.
 
 **Answer:**
@@ -147,8 +146,8 @@ trainable parameters (about `2.13B`); at float32 (`4` bytes per parameter), this
 These values are checked by `artifacts/experiments/ch3/3_6_1/verify_gpt2_xl_accounting.py`.
 
 ### (b)
-**Question:** Identify the matrix multiplies required for one forward pass of the GPT-2 XL-shaped model. How many FLOPs do they require in total (sequence length = `context_length`)?  
-**Deliverable:** A list of matrix multiplies (with descriptions), and total FLOPs.
+**Question:** Identify the matrix multiplies required to complete a forward pass of our GPT-2 XL-shaped model. How many FLOPs do these matrix multiplies require in total? Assume that our input sequence has `context_length` tokens.  
+**Deliverable:** A list of matrix multiplies (with descriptions), and the total number of FLOPs required.
 
 **Answer:**
 Let `V = vocab_size`, `T = context_length`, `L = num_layers`, `D = d_model`, `H = num_heads`, and `F = d_ff`, with `d_k = D / H`.
@@ -174,15 +173,15 @@ Assuming a single input sequence of length `T = 1024`, with `L = 48`, `D = 1600`
 This gives `90,596,966,400` FLOPs per Transformer layer, so the `48` blocks require `4,348,654,387,200` FLOPs in total. The final language-model head adds `2 * T * D * V = 2 * 1024 * 1600 * 50257 = 164,682,137,600` FLOPs, giving a total of `4,513,336,524,800` FLOPs for one forward pass. These values are checked by `artifacts/experiments/ch3/3_6_1/verify_gpt2_xl_accounting.py`.
 
 ### (c)
-**Question:** Based on your analysis, which parts of the model require the most FLOPs?  
+**Question:** Based on your analysis above, which parts of the model require the most FLOPs?  
 **Deliverable:** A one-to-two sentence response.
 
 **Answer:**
 Using the component decomposition from part (b), the dominant term is the FFN block (`W_1`, `W_3`, `W_2`), which contributes about `66.9%` of the total forward-pass FLOPs. The next largest contributor is the attention projection stack (`Q/K/V/O`) at about `22.3%`, while `QK^T`, `A @ V`, and the final `lm_head` each contribute only a few percent.
 
 ### (d)
-**Question:** Repeat analysis for GPT-2 small (12L, 768d, 12H), medium (24L, 1024d, 16H), and large (36L, 1280d, 20H). As model size increases, which components take proportionally more or less FLOPs?  
-**Deliverable:** For each model, provide component-wise FLOP breakdown (proportion of total), plus a one-to-two sentence summary.
+**Question:** Repeat your analysis with GPT-2 small (12 layers, 768 `d_model`, 12 heads), GPT-2 medium (24 layers, 1024 `d_model`, 16 heads), and GPT-2 large (36 layers, 1280 `d_model`, 20 heads). As the model size increases, which parts of the Transformer LM take up proportionally more or less of the total FLOPs?  
+**Deliverable:** For each model, provide a breakdown of model components and its associated FLOPs (as a proportion of the total FLOPs required for a forward pass). In addition, provide a one-to-two sentence description of how varying the model size changes the proportional FLOPs of each component.
 
 **Answer:**
 Using the same notation as above, with `V = vocab_size`, `T = context_length`, `L = num_layers`, `D = d_model`, `H = num_heads`, and `F = d_ff`, the total forward-pass FLOPs are
@@ -214,7 +213,7 @@ I break the total into five components: attention projections, attention scores 
 At fixed context length, increasing model size makes the `O(T * d_model^2)` terms more dominant, especially the FFN and attention projection layers. In contrast, the `O(T^2 * d_model)` attention matrix products and the final `lm_head` take up a smaller fraction of total FLOPs as `d_model` and `num_layers` grow.
 
 ### (e)
-**Question:** For GPT-2 XL, increase context length to 16,384. How do total forward FLOPs and relative component contributions change?  
+**Question:** Take GPT-2 XL and increase the context length to 16,384. How does the total FLOPs for one forward pass change? How do the relative contribution of FLOPs of the model components change?  
 **Deliverable:** A one-to-two sentence response.
 
 **Answer:**
@@ -224,8 +223,8 @@ Under the same formula, increasing context length mainly changes the balance bet
 
 ## Problem `learning_rate_tuning`: Tuning the learning rate (1 point)
 
-**Question:** Run the toy SGD example with learning rates `1e1`, `1e2`, and `1e3` for 10 iterations. What happens to loss for each LR (faster decay, slower decay, or divergence)?  
-**Deliverable:** A one-to-two sentence response.
+**Question:** Run the SGD example above with three other values for the learning rate: `1e1`, `1e2`, and `1e3`, for just 10 training iterations. What happens with the loss for each of these learning rates? Does it decay faster, slower, or does it diverge (i.e., increase over the course of training)?  
+**Deliverable:** A one-two sentence response with the behaviors you observed.
 
 **Answer:**  
 With a learning rate of `1e1`, the loss decreases steadily but more slowly than with `1e2`. A learning rate of `1e2` reduces the loss faster, while `1e3` causes the optimization to diverge rather than converge.
@@ -235,8 +234,8 @@ With a learning rate of `1e1`, the loss decreases steadily but more slowly than 
 ## Problem `adamwAccounting`: Resource accounting for training with AdamW (2 points)
 
 ### (a)
-**Question:** Compute peak memory for AdamW training in float32. Decompose into parameters, activations, gradients, optimizer state. Express in terms of `batch_size`, `vocab_size`, `context_length`, `num_layers`, `d_model`, `num_heads` (assume `d_ff = 4 * d_model`).  
-**Deliverable:** Algebraic expression for each component and total.
+**Question:** How much peak memory does running AdamW require? Decompose your answer based on the memory usage of the parameters, activations, gradients, and optimizer state. Express your answer in terms of the `batch_size` and the model hyperparameters (`vocab_size`, `context_length`, `num_layers`, `d_model`, `num_heads`). Assume `d_ff = 4 * d_model`.  
+**Deliverable:** An algebraic expression for each of parameters, activations, gradients, and optimizer state, as well as the total.
 
 **Answer:**  
 Let `B = batch_size`, `V = vocab_size`, `T = context_length`, `L = num_layers`, `D = d_model`, `H = num_heads`, and `d_ff = 4D`. Since all tensors are in float32, each stored element uses `4` bytes.
@@ -289,8 +288,8 @@ The total peak memory is therefore
 `= 16[2VD + L(16D^2 + 2D) + D] + 4[L(16BTD + 2BHT^2) + BTD + 2BTV].`
 
 ### (b)
-**Question:** Instantiate for GPT-2 XL so expression depends only on `batch_size`. What maximum `batch_size` fits in 80GB?  
-**Deliverable:** Expression of form `a * batch_size + b`, and max batch size.
+**Question:** Instantiate your answer for a GPT-2 XL-shaped model to get an expression that only depends on the `batch_size`. What is the maximum batch size you can use and still fit within 80GB memory?  
+**Deliverable:** An expression that looks like `a * batch_size + b` for numerical values `a`, `b`, and a number representing the maximum batch size.
 
 **Answer:**  
 For GPT-2 XL, using `V = 50,257`, `T = 1,024`, `L = 48`, `D = 1,600`, and `H = 25`, the total memory expression from part `(a)` becomes
@@ -300,8 +299,8 @@ For GPT-2 XL, using `V = 50,257`, `T = 1,024`, `L = 48`, `D = 1,600`, and `H = 2
 where the linear term comes from activations and the constant term comes from parameters, gradients, and AdamW optimizer state. If we interpret `80GB` in decimal units as `80,000,000,000` bytes, then the maximum batch size is `2`, since `B = 3` would require `80,586,181,632` bytes. (If one instead uses the binary convention `80 GiB = 80 * 1024^3` bytes, the answer would be `3`, but I use the decimal `80GB` wording from the prompt here.)
 
 ### (c)
-**Question:** How many FLOPs does one AdamW step take?  
-**Deliverable:** Algebraic expression with brief justification.
+**Question:** How many FLOPs does running one step of AdamW take?  
+**Deliverable:** An algebraic expression, with a brief justification.
 
 **Answer:**  
 Let `B = batch_size`, `V = vocab_size`, `T = context_length`, `L = num_layers`, `D = d_model`, `H = num_heads`, and `d_ff = 4D`. Reusing the matrix-multiply accounting from `transformer_accounting`, the forward-pass FLOPs for a batch are
@@ -344,8 +343,8 @@ is the total number of parameters. Therefore, one AdamW training step requires a
 The dominant term is the forward/backward model computation; the optimizer update is lower-order in practice because it is only linear in the parameter count.
 
 ### (d)
-**Question:** A100 FP32 peak is 19.5 TFLOP/s. Assuming 50% MFU, how long (days) to train GPT-2 XL for 400K steps with batch size 1024 on one A100? Assume backward FLOPs = 2x forward FLOPs.  
-**Deliverable:** Number of days with brief justification.
+**Question:** Model FLOPs utilization (MFU) is defined as the ratio of observed throughput (tokens per second) relative to the hardware's theoretical peak FLOP throughput. An NVIDIA A100 GPU has a theoretical peak of 19.5 teraFLOP/s for float32 operations. Assuming you are able to get 50% MFU, how long would it take to train a GPT-2 XL for 400K steps and a batch size of 1024 on a single A100? Following Kaplan et al. and Hoffmann et al., assume that the backward pass has twice the FLOPs of the forward pass.  
+**Deliverable:** The number of days training would take, with a brief justification.
 
 **Answer:**  
 Using the forward-pass result from `transformer_accounting`, GPT-2 XL requires `4,513,336,524,800` FLOPs per sequence of length `1024`. With batch size `1024`, this gives `4,621,656,601,395,200` forward FLOPs per training step. Using the approximation `backward = 2 x forward`, plus the AdamW optimizer cost `F_opt = 15P = 31,905,864,000`, one step costs approximately `13,865,001,710,049,600` FLOPs in total. Over `400,000` steps this is `5.54600068401984e21` FLOPs, and at `50%` MFU on a single A100 the effective throughput is `0.5 * 19.5e12 = 9.75e12` FLOP/s, so training would take about `6,583.6` days (about `18.0` years). This is a hypothetical throughput estimate and does not require the batch size to satisfy the separate memory constraint from part `(b)`.
@@ -355,9 +354,9 @@ Using the forward-pass result from `transformer_accounting`, GPT-2 XL requires `
 ## Problem `learning_rate`: Tune the learning rate (3 points)
 
 ### (a)
-**Question:** Sweep learning rates for the base TinyStories model and report final losses (or divergence).  
-**Deliverable 1:** Learning curves for multiple LRs and explanation of hyperparameter search strategy.  
-**Deliverable 2:** A model with TinyStories validation loss (per-token) of at most 1.45 (or adjusted target if using low-resource setting explicitly allowed by the handout).
+**Question:** Perform a hyperparameter sweep over the learning rates and report the final losses (or note divergence if the optimizer diverges).  
+**Deliverable:** Learning curves associated with multiple learning rates. Explain your hyperparameter search strategy.  
+**Deliverable:** A model with validation loss (per-token) on TinyStories of at most 1.45.
 
 **Answer:**
 
@@ -372,9 +371,9 @@ I then used `learning_rate=4.0e-3` for a longer training run with `warmup_iters=
 Figure: TinyStories validation-loss curves at `batch_size=128` for representative learning rates. The best region is centered near `4e-3`, while larger learning rates quickly degrade.
 
 ### (b)
-**Question:** Investigate whether the best LR is “at the edge of stability.” Include increasing-LR curves with at least one divergent run, and analyze relation to convergence.
+**Question:** Folk wisdom is that the best learning rate is "at the edge of stability." Investigate how the point at which learning rates diverge is related to your best learning rate.
 
-**Deliverable:** Learning curves and analysis.
+**Deliverable:** Learning curves of increasing learning rate which include at least one divergent run and an analysis of how this relates to convergence rates.
 
 **Answer:**
 
@@ -390,9 +389,9 @@ Figure: At `batch_size=128`, learning rates above the optimum quickly move from 
 
 ## Problem `batch_size_experiment`: Batch size variations (1 point)
 
-**Question:** Vary batch size from 1 to memory limit (including intermediate values such as 64 and 128). Re-tune LR if needed.  
-**Deliverable 1:** Learning curves for different batch sizes.  
-**Deliverable 2:** A few sentences discussing findings.
+**Question:** Vary your batch size all the way from 1 to the GPU memory limit. Try at least a few batch sizes in between, including typical sizes like 64 and 128.  
+**Deliverable:** Learning curves for runs with different batch sizes. The learning rates should be optimized again if necessary.  
+**Deliverable:** A few sentences discussing of your findings on batch sizes and their impacts on training.
 
 **Answer:**
 
@@ -408,9 +407,9 @@ Figure: Best validation-loss curve for each batch size after local LR retuning. 
 
 ## Problem `generate`: Generate text (1 point)
 
-**Question:** Using your decoder and trained checkpoint, report generated text (at least 256 tokens, or until first `<|endoftext|>`). Briefly comment on fluency and at least two factors affecting quality.
+**Question:** Using your decoder and your trained checkpoint, report the text generated by your model. You may need to manipulate decoder parameters (temperature, top-p, etc.) to get fluent outputs.
 
-**Deliverable:** Text dump + brief commentary.
+**Deliverable:** Text dump of at least 256 tokens of text (or until the first `<|endoftext|>` token), and a brief comment on the fluency of this output and at least two factors which affect how good or bad this output is.
 
 **Generated text:**
 
@@ -432,9 +431,9 @@ Two main factors affect the output quality here. First, checkpoint quality matte
 
 ## Problem `layer_norm_ablation`: Remove RMSNorm and train (1 point)
 
-**Question:** Remove RMSNorm from transformer blocks and train. What happens at previous optimal LR? Can training be stabilized with lower LR?  
-**Deliverable 1:** Learning curve without RMSNorm and learning curve at best LR.  
-**Deliverable 2:** A few sentences on RMSNorm impact.
+**Question:** Remove all of the RMSNorms from your Transformer and train. What happens at the previous optimal learning rate? Can you get stability by using a lower learning rate?  
+**Deliverable:** A learning curve for when you remove RMSNorms and train, as well as a learning curve for the best learning rate.  
+**Deliverable:** A few sentence commentary on the impact of RMSNorm.
 
 **Answer:**
 
@@ -452,8 +451,8 @@ Figure: Without RMSNorm, the previous optimal `learning_rate=4e-3` becomes unsta
 
 ## Problem `pre_norm_ablation`: Implement post-norm and train (1 point)
 
-**Question:** Change pre-norm transformer to post-norm and train.  
-**Deliverable:** Learning curve for post-norm model compared to pre-norm.
+**Question:** Modify your pre-norm Transformer implementation into a post-norm one. Train with the post-norm model and see what happens.  
+**Deliverable:** A learning curve for a post-norm transformer, compared to the pre-norm one.
 
 **Answer:**
 
@@ -469,8 +468,8 @@ Figure: Under the same TinyStories training hyperparameters, pre-norm converges 
 
 ## Problem `no_pos_emb`: Implement NoPE (1 point)
 
-**Question:** Remove positional embedding information (NoPE) and compare with RoPE.  
-**Deliverable:** Learning curve comparing RoPE and NoPE.
+**Question:** Modify your Transformer implementation with RoPE to remove the position embedding information entirely, and see what happens.  
+**Deliverable:** A learning curve comparing the performance of RoPE and NoPE.
 
 **Answer:**
 
@@ -486,8 +485,7 @@ Figure: Removing RoPE does not prevent learning, but the NoPE model converges su
 
 ## Problem `swiglu_ablation`: SwiGLU vs. SiLU (1 point)
 
-**Question:** Compare SwiGLU FFN vs. SiLU FFN (approximately matched parameter counts).  
-**Deliverable:** Learning curve comparison.
+**Deliverable:** A learning curve comparing the performance of SwiGLU and SiLU feed-forward networks, with approximately matched parameter counts.
 
 **Answer:**
 
@@ -504,8 +502,8 @@ Figure: SwiGLU converges slightly better than a parameter-matched SiLU feed-forw
 ## Problem `main_experiment`: Experiment on OpenWebText (2 points)
 
 ### (a)
-**Question:** Train LM on OWT with same architecture and total training iterations as TinyStories. How well does it perform?  
-**Deliverable:** Learning curve on OWT + explanation of loss differences vs. TinyStories.
+**Question:** Train your language model on OpenWebText with the same model architecture and total training iterations as TinyStories. How well does this model do?  
+**Deliverable:** A learning curve of your language model on OpenWebText. Describe the difference in losses from TinyStories - how should we interpret these losses?
 
 **Answer:**
 
@@ -524,8 +522,7 @@ Figure: Under the same `10000`-step training budget, the OpenWebText model conve
 Figure: The OWT run also remains within the wall-clock budget, finishing in under one hour, but it is consistently worse than TinyStories at matched time as well as matched steps.
 
 ### (b)
-**Question:** Provide generated text from OWT LM (same format as TinyStories outputs). How fluent is it? Why is output quality worse despite same model and compute budget?  
-**Deliverable:** Generated text + analysis.
+**Deliverable:** Generated text from OpenWebText LM, in the same format as the TinyStories outputs. How is the fluency of this text? Why is the output quality worse even though we have the same model and compute budget as TinyStories?
 
 **Answer:**
 
@@ -553,9 +550,9 @@ There are several reasons the output quality is worse despite using the same arc
 
 ## Problem `leaderboard`: Leaderboard (6 points, optional if participating)
 
-**Question:** Train under leaderboard rules to minimize validation loss within 1.5 H100-hour.
+**Question:** You will train a model under the leaderboard rules above with the goal of minimizing the validation loss of your language model within 1.5 H100-hour.
 
-**Deliverable:** Final validation loss, learning curve with wall-clock x-axis under 1.5 hours, and description of what was changed.
+**Deliverable:** The final validation loss that was recorded, an associated learning curve that clearly shows a wallclock-time x-axis that is less than 1.5 hours and a description of what you did. We expect a leaderboard submission to beat at least the naive baseline of a 5.0 loss. Submit to the leaderboard here: https://github.com/stanford-cs336/assignment1-basics-leaderboard.
 
 **Answer:**
 
