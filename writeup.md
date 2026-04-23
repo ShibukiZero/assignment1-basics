@@ -138,24 +138,24 @@ Let `V = vocab_size`, `T = context_length`, `L = num_layers`, `D = d_model`, `H 
 For this assignment's `TransformerLM` implementation, the parameter count is
 
 $$
-\text{token\_embeddings} + \text{num\_layers} \cdot (\text{attention} + \text{FFN} + \text{RMSNorm}) + \text{ln\_final} + \text{lm\_head},
+\text{token\_embeddings} + \text{num\_layers} \cdot (\text{attention} + \text{FFN} + \text{RMSNorm}) + \text{ln\_final} + \text{lm\_head}
 $$
 
 where
 
 $$
-\text{token\_embeddings} = V D,\qquad
-\text{attention} = 4 D^2,\qquad
-\text{FFN} = 3 D F,\qquad
+\text{token\_embeddings} = V D \\
+\text{attention} = 4 D^2 \\
+\text{FFN} = 3 D F \\
 \text{RMSNorm} = 2 D
 $$
 
 per block. Plugging in `V = 50,257`, `L = 48`, `D = 1600`, and `F = 6400` gives
 
 $$
-2VD + L(4D^2 + 3DF + 2D) + D
-= 2 \cdot 50257 \cdot 1600 + 48(4 \cdot 1600^2 + 3 \cdot 1600 \cdot 6400 + 2 \cdot 1600) + 1600
-= 2{,}127{,}057{,}600.
+2VD + L(4D^2 + 3DF + 2D) + D \\
+= 2 \cdot 50257 \cdot 1600 + 48(4 \cdot 1600^2 + 3 \cdot 1600 \cdot 6400 + 2 \cdot 1600) + 1600 \\
+= 2{,}127{,}057{,}600
 $$
 
 So the model has `2,127,057,600` trainable parameters (about `2.13B`); at float32 (`4` bytes per parameter), this requires
@@ -176,7 +176,7 @@ Let `V = vocab_size`, `T = context_length`, `L = num_layers`, `D = d_model`, `H 
 Using the handout rule that a matrix multiply `(m x n) @ (n x p)` costs `2mnp` FLOPs, the forward-pass cost is
 
 $$
-L(8TD^2 + 4T^2D + 6TDF) + 2TDV,
+L(8TD^2 + 4T^2D + 6TDF) + 2TDV
 $$
 
 where `8 * T * D^2` comes from the four attention projections, `4 * T^2 * D` comes from `QK^T` and `A @ V`, `6 * T * D * F` comes from the three FFN multiplies, and `2 * T * D * V` comes from the final `lm_head`.
@@ -218,7 +218,7 @@ Using the component decomposition from part (b), the dominant term is the FFN bl
 Using the same notation as above, with `V = vocab_size`, `T = context_length`, `L = num_layers`, `D = d_model`, `H = num_heads`, and `F = d_ff`, the total forward-pass FLOPs are
 
 $$
-\text{total} = L(8TD^2 + 4T^2D + 6TDF) + 2TDV.
+\text{total} = L(8TD^2 + 4T^2D + 6TDF) + 2TDV
 $$
 
 Using this formula,
@@ -255,7 +255,7 @@ At fixed context length, increasing model size makes the `O(T * d_model^2)` term
 Under the same formula, increasing context length mainly changes the balance between the `O(T * D^2)` terms and the `O(T^2 * D)` attention-matrix terms. For GPT-2 XL,
 
 $$
-T: 1024 \rightarrow 16{,}384,\qquad
+T: 1024 \rightarrow 16{,}384 \\
 \text{total FLOPs}: 4{,}513{,}336{,}524{,}800 \rightarrow 149{,}522{,}795{,}724{,}800
 $$
 
@@ -285,7 +285,7 @@ Let `B = batch_size`, `V = vocab_size`, `T = context_length`, `L = num_layers`, 
 The total number of model parameters is
 
 $$
-P = 2VD + L(16D^2 + 2D) + D,
+P = 2VD + L(16D^2 + 2D) + D
 $$
 
 where `2VD` comes from the input embedding and output projection, each Transformer block contributes `4D^2` attention parameters, `12D^2` SwiGLU parameters, and `2D` RMSNorm parameters, and the final RMSNorm contributes `D`.
@@ -338,11 +338,8 @@ $$
 The total peak memory is therefore
 
 $$
-M_{\text{total}} = M_{\text{params}} + M_{\text{acts}} + M_{\text{grads}} + M_{\text{opt}}
-$$
-
-$$
-= 16[2VD + L(16D^2 + 2D) + D] + 4[L(16BTD + 2BHT^2) + BTD + 2BTV].
+M_{\text{total}} = M_{\text{params}} + M_{\text{acts}} + M_{\text{grads}} + M_{\text{opt}} \\
+= 16[2VD + L(16D^2 + 2D) + D] + 4[L(16BTD + 2BHT^2) + BTD + 2BTV]
 $$
 
 ### (b)
@@ -395,7 +392,7 @@ For the AdamW optimizer update itself, treating elementwise arithmetic as consta
 This gives about `3 + 4 + 5 + 3 = 15` FLOPs per parameter element, so a convenient accounting is
 
 $$
-F_{\text{opt}} \approx 15P,
+F_{\text{opt}} \approx 15P
 $$
 
 where
@@ -407,11 +404,8 @@ $$
 is the total number of parameters. Therefore, one AdamW training step requires approximately
 
 $$
-F_{\text{step}} \approx F_{\text{forward}} + F_{\text{backward}} + F_{\text{opt}} = 3F_{\text{forward}} + 15P
-$$
-
-$$
-= 3[L(32BTD^2 + 4BT^2D) + 2BTDV] + 15[2VD + L(16D^2 + 2D) + D].
+F_{\text{step}} \approx F_{\text{forward}} + F_{\text{backward}} + F_{\text{opt}} = 3F_{\text{forward}} + 15P \\
+= 3[L(32BTD^2 + 4BT^2D) + 2BTDV] + 15[2VD + L(16D^2 + 2D) + D]
 $$
 
 The dominant term is the forward/backward model computation; the optimizer update is lower-order in practice because it is only linear in the parameter count.
