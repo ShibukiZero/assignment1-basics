@@ -179,7 +179,7 @@ $$
 L(8TD^2 + 4T^2D + 6TDF) + 2TDV
 $$
 
-where $8TD^2$ comes from the four attention projections, $4T^2D$ comes from $QK^T$ and $A @ V$, $6TDF$ comes from the three FFN multiplies, and $2TDV$ comes from the final $lm\_head$.
+where $8TD^2$ comes from the four attention projections, $4T^2D$ comes from $QK^T$ and $A @ V$, $6TDF$ comes from the three FFN multiplies, and $2TDV$ comes from the final LM head.
 Assuming a single input sequence of length `T = 1024`, with `L = 48`, `D = 1600`, `H = 25`, `d_k = D / H = 64`, `F = 6400`, and `V = 50257`, the matrix multiplies in one forward pass are:
 
 - Per layer attention projections:
@@ -208,7 +208,7 @@ FLOPs, giving a total of `4,513,336,524,800` FLOPs for one forward pass. These v
 **Deliverable:** A one-to-two sentence response.
 
 **Answer:**
-Using the component decomposition from part (b), the dominant term is the FFN block ($W_1$, $W_3$, $W_2$), which contributes about `66.9%` of the total forward-pass FLOPs. The next largest contributor is the attention projection stack ($Q/K/V/O$) at about `22.3%`, while $QK^T$, $A @ V$, and the final $lm\_head$ each contribute only a few percent.
+Using the component decomposition from part (b), the dominant term is the FFN block ($W_1$, $W_3$, $W_2$), which contributes about `66.9%` of the total forward-pass FLOPs. The next largest contributor is the attention projection stack ($Q/K/V/O$) at about `22.3%`, while $QK^T$, $A @ V$, and the final LM head each contribute only a few percent.
 
 ### (d)
 **Question:** Repeat your analysis with GPT-2 small (12 layers, 768 `d_model`, 12 heads), GPT-2 medium (24 layers, 1024 `d_model`, 16 heads), and GPT-2 large (36 layers, 1280 `d_model`, 20 heads). As the model size increases, which parts of the Transformer LM take up proportionally more or less of the total FLOPs?  
@@ -222,7 +222,7 @@ $$
 $$
 
 Using this formula,
-I break the total into five components: attention projections, attention scores ($QK^T$), attention values ($A @ V$), FFN, and $lm\_head$. The forward-pass FLOP breakdowns are:
+I break the total into five components: attention projections, attention scores ($QK^T$), attention values ($A @ V$), FFN, and the LM head. The forward-pass FLOP breakdowns are:
 
 - **GPT-2 small**
   - attention projections: `57,982,058,496` FLOPs (`16.58%`)
@@ -245,7 +245,7 @@ I break the total into five components: attention projections, attention scores 
   - FFN: `1,449,551,462,400` FLOPs (`64.20%`)
   - `lm_head`: `131,745,710,080` FLOPs (`5.84%`)
 
-At fixed context length, increasing model size makes the $O(T d_{model}^2)$ terms more dominant, especially the FFN and attention projection layers. In contrast, the $O(T^2 d_{model})$ attention matrix products and the final $lm\_head$ take up a smaller fraction of total FLOPs as `d_model` and `num_layers` grow.
+At fixed context length, increasing model size makes the $O(T d_{model}^2)$ terms more dominant, especially the FFN and attention projection layers. In contrast, the $O(T^2 d_{model})$ attention matrix products and the final LM head take up a smaller fraction of total FLOPs as `d_model` and `num_layers` grow.
 
 ### (e)
 **Question:** Take GPT-2 XL and increase the context length to 16,384. How does the total FLOPs for one forward pass change? How do the relative contribution of FLOPs of the model components change?  
