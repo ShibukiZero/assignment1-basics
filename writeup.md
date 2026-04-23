@@ -138,13 +138,13 @@ Let `V = vocab_size`, `T = context_length`, `L = num_layers`, `D = d_model`, `H 
 For this assignment's `TransformerLM` implementation, the parameter count is
 
 $$
-\text{token\_embeddings} + \text{num\_layers} \cdot (\text{attention} + \text{FFN} + \text{RMSNorm}) + \text{ln\_final} + \text{lm\_head}
+\text{token embeddings} + \text{num layers} \cdot (\text{attention} + \text{FFN} + \text{RMSNorm}) + \text{final norm} + \text{LM head}
 $$
 
 where
 
 $$
-\text{token\_embeddings} = V D \\
+\text{token embeddings} = V D \\
 \text{attention} = 4 D^2 \\
 \text{FFN} = 3 D F \\
 \text{RMSNorm} = 2 D
