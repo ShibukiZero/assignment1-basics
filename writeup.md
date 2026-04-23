@@ -195,7 +195,13 @@ Assuming a single input sequence of length `T = 1024`, with `L = 48`, `D = 1600`
   - `X @ W_3`: `20,971,520,000`
   - `gate @ W_2`: `2 * T * F * D = 20,971,520,000`
 
-This gives `90,596,966,400` FLOPs per Transformer layer, so the `48` blocks require `4,348,654,387,200` FLOPs in total. The final language-model head adds `2 * T * D * V = 2 * 1024 * 1600 * 50257 = 164,682,137,600` FLOPs, giving a total of `4,513,336,524,800` FLOPs for one forward pass. These values are checked by `artifacts/experiments/ch3/3_6_1/verify_gpt2_xl_accounting.py`.
+This gives `90,596,966,400` FLOPs per Transformer layer, so the `48` blocks require `4,348,654,387,200` FLOPs in total. The final language-model head adds
+
+$$
+2TDV = 2 \cdot 1024 \cdot 1600 \cdot 50257 = 164{,}682{,}137{,}600
+$$
+
+FLOPs, giving a total of `4,513,336,524,800` FLOPs for one forward pass. These values are checked by `artifacts/experiments/ch3/3_6_1/verify_gpt2_xl_accounting.py`.
 
 ### (c)
 **Question:** Based on your analysis above, which parts of the model require the most FLOPs?  
@@ -246,7 +252,14 @@ At fixed context length, increasing model size makes the `O(T * d_model^2)` term
 **Deliverable:** A one-to-two sentence response.
 
 **Answer:**
-Under the same formula, increasing context length mainly changes the balance between the `O(T * D^2)` terms and the `O(T^2 * D)` attention-matrix terms. For GPT-2 XL, increasing `T` from `1024` to `16,384` raises the total forward-pass FLOPs from `4,513,336,524,800` to `149,522,795,724,800` (about `33.1x`), and the combined share of `QK^T` plus `A @ V` grows from about `7.14%` to about `55.15%`, making long-context attention much more dominant.
+Under the same formula, increasing context length mainly changes the balance between the `O(T * D^2)` terms and the `O(T^2 * D)` attention-matrix terms. For GPT-2 XL,
+
+$$
+T: 1024 \rightarrow 16{,}384,\qquad
+\text{total FLOPs}: 4{,}513{,}336{,}524{,}800 \rightarrow 149{,}522{,}795{,}724{,}800
+$$
+
+(about `33.1x`), and the combined share of `QK^T` plus `A @ V` grows from about `7.14%` to about `55.15%`, making long-context attention much more dominant.
 
 ---
 
@@ -408,7 +421,25 @@ The dominant term is the forward/backward model computation; the optimizer updat
 **Deliverable:** The number of days training would take, with a brief justification.
 
 **Answer:**  
-Using the forward-pass result from `transformer_accounting`, GPT-2 XL requires `4,513,336,524,800` FLOPs per sequence of length `1024`. With batch size `1024`, this gives `4,621,656,601,395,200` forward FLOPs per training step. Using the approximation `backward = 2 x forward`, plus the AdamW optimizer cost `F_opt = 15P = 31,905,864,000`, one step costs approximately `13,865,001,710,049,600` FLOPs in total. Over `400,000` steps this is `5.54600068401984e21` FLOPs, and at `50%` MFU on a single A100 the effective throughput is `0.5 * 19.5e12 = 9.75e12` FLOP/s, so training would take about `6,583.6` days (about `18.0` years). This is a hypothetical throughput estimate and does not require the batch size to satisfy the separate memory constraint from part `(b)`.
+Using the forward-pass result from `transformer_accounting`, GPT-2 XL requires `4,513,336,524,800` FLOPs per sequence of length `1024`. With batch size `1024`, this gives `4,621,656,601,395,200` forward FLOPs per training step. Using the approximation `backward = 2 x forward`, plus the AdamW optimizer cost `F_opt = 15P = 31,905,864,000`, one step costs approximately
+
+$$
+13{,}865{,}001{,}710{,}049{,}600
+$$
+
+FLOPs in total. Over `400,000` steps this is
+
+$$
+5.54600068401984 \times 10^{21}
+$$
+
+FLOPs, and at `50%` MFU on a single A100 the effective throughput is
+
+$$
+0.5 \cdot 19.5 \times 10^{12} = 9.75 \times 10^{12}
+$$
+
+FLOP/s, so training would take about `6,583.6` days (about `18.0` years). This is a hypothetical throughput estimate and does not require the batch size to satisfy the separate memory constraint from part `(b)`.
 
 ---
 
