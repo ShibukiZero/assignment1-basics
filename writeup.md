@@ -136,13 +136,35 @@ Using the OpenWebText tokenizer (32K) on a 50MB OpenWebText validation slice, me
 **Answer:**
 Let `V = vocab_size`, `T = context_length`, `L = num_layers`, `D = d_model`, `H = num_heads`, and `F = d_ff`.
 For this assignment's `TransformerLM` implementation, the parameter count is
-`token_embeddings + num_layers * (attention + FFN + RMSNorm) + ln_final + lm_head`, where
-`token_embeddings = V * D`, `attention = 4 * D^2`, `FFN = 3 * D * F`, and
-`RMSNorm = 2 * D` per block. Plugging in `V = 50,257`, `L = 48`,
-`D = 1600`, and `F = 6400` gives
-`2 * V * D + L * (4 * D^2 + 3 * D * F + 2 * D) + D = 2 * 50257 * 1600 + 48 * (4 * 1600^2 + 3 * 1600 * 6400 + 2 * 1600) + 1600 = 2,127,057,600`
-trainable parameters (about `2.13B`); at float32 (`4` bytes per parameter), this requires
-`2,127,057,600 * 4 = 8,508,230,400` bytes, or about `8.51 GB` (`7.92 GiB`), just to store the parameters.
+
+$$
+\text{token\_embeddings} + \text{num\_layers} \cdot (\text{attention} + \text{FFN} + \text{RMSNorm}) + \text{ln\_final} + \text{lm\_head},
+$$
+
+where
+
+$$
+\text{token\_embeddings} = V D,\qquad
+\text{attention} = 4 D^2,\qquad
+\text{FFN} = 3 D F,\qquad
+\text{RMSNorm} = 2 D
+$$
+
+per block. Plugging in `V = 50,257`, `L = 48`, `D = 1600`, and `F = 6400` gives
+
+$$
+2VD + L(4D^2 + 3DF + 2D) + D
+= 2 \cdot 50257 \cdot 1600 + 48(4 \cdot 1600^2 + 3 \cdot 1600 \cdot 6400 + 2 \cdot 1600) + 1600
+= 2{,}127{,}057{,}600.
+$$
+
+So the model has `2,127,057,600` trainable parameters (about `2.13B`); at float32 (`4` bytes per parameter), this requires
+
+$$
+2{,}127{,}057{,}600 \cdot 4 = 8{,}508{,}230{,}400
+$$
+
+bytes, or about `8.51 GB` (`7.92 GiB`), just to store the parameters.
 These values are checked by `artifacts/experiments/ch3/3_6_1/verify_gpt2_xl_accounting.py`.
 
 ### (b)
@@ -152,9 +174,12 @@ These values are checked by `artifacts/experiments/ch3/3_6_1/verify_gpt2_xl_acco
 **Answer:**
 Let `V = vocab_size`, `T = context_length`, `L = num_layers`, `D = d_model`, `H = num_heads`, and `F = d_ff`, with `d_k = D / H`.
 Using the handout rule that a matrix multiply `(m x n) @ (n x p)` costs `2mnp` FLOPs, the forward-pass cost is
-`L * (8 * T * D^2 + 4 * T^2 * D + 6 * T * D * F) + 2 * T * D * V`, where
-`8 * T * D^2` comes from the four attention projections, `4 * T^2 * D` comes from `QK^T` and `A @ V`,
-`6 * T * D * F` comes from the three FFN multiplies, and `2 * T * D * V` comes from the final `lm_head`.
+
+$$
+L(8TD^2 + 4T^2D + 6TDF) + 2TDV,
+$$
+
+where `8 * T * D^2` comes from the four attention projections, `4 * T^2 * D` comes from `QK^T` and `A @ V`, `6 * T * D * F` comes from the three FFN multiplies, and `2 * T * D * V` comes from the final `lm_head`.
 Assuming a single input sequence of length `T = 1024`, with `L = 48`, `D = 1600`, `H = 25`, `d_k = D / H = 64`, `F = 6400`, and `V = 50257`, the matrix multiplies in one forward pass are:
 
 - Per layer attention projections:
@@ -170,7 +195,13 @@ Assuming a single input sequence of length `T = 1024`, with `L = 48`, `D = 1600`
   - `X @ W_3`: `20,971,520,000`
   - `gate @ W_2`: `2 * T * F * D = 20,971,520,000`
 
-This gives `90,596,966,400` FLOPs per Transformer layer, so the `48` blocks require `4,348,654,387,200` FLOPs in total. The final language-model head adds `2 * T * D * V = 2 * 1024 * 1600 * 50257 = 164,682,137,600` FLOPs, giving a total of `4,513,336,524,800` FLOPs for one forward pass. These values are checked by `artifacts/experiments/ch3/3_6_1/verify_gpt2_xl_accounting.py`.
+This gives `90,596,966,400` FLOPs per Transformer layer, so the `48` blocks require `4,348,654,387,200` FLOPs in total. The final language-model head adds
+
+$$
+2TDV = 2 \cdot 1024 \cdot 1600 \cdot 50257 = 164{,}682{,}137{,}600
+$$
+
+FLOPs, giving a total of `4,513,336,524,800` FLOPs for one forward pass. These values are checked by `artifacts/experiments/ch3/3_6_1/verify_gpt2_xl_accounting.py`.
 
 ### (c)
 **Question:** Based on your analysis above, which parts of the model require the most FLOPs?  
@@ -185,7 +216,11 @@ Using the component decomposition from part (b), the dominant term is the FFN bl
 
 **Answer:**
 Using the same notation as above, with `V = vocab_size`, `T = context_length`, `L = num_layers`, `D = d_model`, `H = num_heads`, and `F = d_ff`, the total forward-pass FLOPs are
-`total = L * (8 * T * D^2 + 4 * T^2 * D + 6 * T * D * F) + 2 * T * D * V`.
+
+$$
+\text{total} = L(8TD^2 + 4T^2D + 6TDF) + 2TDV.
+$$
+
 Using this formula,
 I break the total into five components: attention projections, attention scores (`QK^T`), attention values (`A @ V`), FFN, and `lm_head`. The forward-pass FLOP breakdowns are:
 
@@ -217,7 +252,14 @@ At fixed context length, increasing model size makes the `O(T * d_model^2)` term
 **Deliverable:** A one-to-two sentence response.
 
 **Answer:**
-Under the same formula, increasing context length mainly changes the balance between the `O(T * D^2)` terms and the `O(T^2 * D)` attention-matrix terms. For GPT-2 XL, increasing `T` from `1024` to `16,384` raises the total forward-pass FLOPs from `4,513,336,524,800` to `149,522,795,724,800` (about `33.1x`), and the combined share of `QK^T` plus `A @ V` grows from about `7.14%` to about `55.15%`, making long-context attention much more dominant.
+Under the same formula, increasing context length mainly changes the balance between the `O(T * D^2)` terms and the `O(T^2 * D)` attention-matrix terms. For GPT-2 XL,
+
+$$
+T: 1024 \rightarrow 16{,}384,\qquad
+\text{total FLOPs}: 4{,}513{,}336{,}524{,}800 \rightarrow 149{,}522{,}795{,}724{,}800
+$$
+
+(about `33.1x`), and the combined share of `QK^T` plus `A @ V` grows from about `7.14%` to about `55.15%`, making long-context attention much more dominant.
 
 ---
 
@@ -242,21 +284,29 @@ Let `B = batch_size`, `V = vocab_size`, `T = context_length`, `L = num_layers`, 
 
 The total number of model parameters is
 
-`P = 2VD + L(16D^2 + 2D) + D,`
+$$
+P = 2VD + L(16D^2 + 2D) + D,
+$$
 
 where `2VD` comes from the input embedding and output projection, each Transformer block contributes `4D^2` attention parameters, `12D^2` SwiGLU parameters, and `2D` RMSNorm parameters, and the final RMSNorm contributes `D`.
 
 Therefore, parameter memory is
 
-`M_params = 4P = 4[2VD + L(16D^2 + 2D) + D].`
+$$
+M_{\text{params}} = 4P = 4[2VD + L(16D^2 + 2D) + D].
+$$
 
 Gradient memory matches parameter memory because each parameter has a float32 gradient tensor of the same shape:
 
-`M_grads = 4P = 4[2VD + L(16D^2 + 2D) + D].`
+$$
+M_{\text{grads}} = 4P = 4[2VD + L(16D^2 + 2D) + D].
+$$
 
 For AdamW, the optimizer state stores two float32 tensors per parameter, the first and second moments (`m` and `v`), so
 
-`M_opt = 8P = 8[2VD + L(16D^2 + 2D) + D].`
+$$
+M_{\text{opt}} = 8P = 8[2VD + L(16D^2 + 2D) + D].
+$$
 
 For activations, counting only the intermediates explicitly listed in the handout:
 
@@ -275,17 +325,25 @@ For activations, counting only the intermediates explicitly listed in the handou
 
 So each block contributes
 
-`16BTD + 2BHT^2`
+$$
+16BTD + 2BHT^2
+$$
 
 activation elements. Adding the final RMSNorm output (`BTD`), output embedding / logits (`BTV`), and cross-entropy on logits (`BTV`) gives
 
-`M_acts = 4[L(16BTD + 2BHT^2) + BTD + 2BTV].`
+$$
+M_{\text{acts}} = 4[L(16BTD + 2BHT^2) + BTD + 2BTV].
+$$
 
 The total peak memory is therefore
 
-`M_total = M_params + M_acts + M_grads + M_opt`
+$$
+M_{\text{total}} = M_{\text{params}} + M_{\text{acts}} + M_{\text{grads}} + M_{\text{opt}}
+$$
 
-`= 16[2VD + L(16D^2 + 2D) + D] + 4[L(16BTD + 2BHT^2) + BTD + 2BTV].`
+$$
+= 16[2VD + L(16D^2 + 2D) + D] + 4[L(16BTD + 2BHT^2) + BTD + 2BTV].
+$$
 
 ### (b)
 **Question:** Instantiate your answer for a GPT-2 XL-shaped model to get an expression that only depends on the `batch_size`. What is the maximum batch size you can use and still fit within 80GB memory?  
@@ -294,7 +352,11 @@ The total peak memory is therefore
 **Answer:**  
 For GPT-2 XL, using `V = 50,257`, `T = 1,024`, `L = 48`, `D = 1,600`, and `H = 25`, the total memory expression from part `(a)` becomes
 
-`M_total(B) = 15,517,753,344 * B + 34,032,921,600` bytes,
+$$
+M_{\text{total}}(B) = 15{,}517{,}753{,}344 \cdot B + 34{,}032{,}921{,}600
+$$
+
+bytes,
 
 where the linear term comes from activations and the constant term comes from parameters, gradients, and AdamW optimizer state. If we interpret `80GB` in decimal units as `80,000,000,000` bytes, then the maximum batch size is `2`, since `B = 3` would require `80,586,181,632` bytes. (If one instead uses the binary convention `80 GiB = 80 * 1024^3` bytes, the answer would be `3`, but I use the decimal `80GB` wording from the prompt here.)
 
@@ -305,11 +367,15 @@ where the linear term comes from activations and the constant term comes from pa
 **Answer:**  
 Let `B = batch_size`, `V = vocab_size`, `T = context_length`, `L = num_layers`, `D = d_model`, `H = num_heads`, and `d_ff = 4D`. Reusing the matrix-multiply accounting from `transformer_accounting`, the forward-pass FLOPs for a batch are
 
-`F_forward = L(32BTD^2 + 4BT^2D) + 2BTDV.`
+$$
+F_{\text{forward}} = L(32BTD^2 + 4BT^2D) + 2BTDV.
+$$
 
 Using the standard approximation that the backward pass costs twice the forward pass, we have
 
-`F_backward ≈ 2F_forward.`
+$$
+F_{\text{backward}} \approx 2F_{\text{forward}}.
+$$
 
 For the AdamW optimizer update itself, treating elementwise arithmetic as constant-cost operations, each parameter contributes a constant number of FLOPs for updating the first moment `m`, second moment `v`, the Adam parameter update, and the decoupled weight decay update. Concretely, for each parameter element:
 
@@ -328,17 +394,25 @@ For the AdamW optimizer update itself, treating elementwise arithmetic as consta
 
 This gives about `3 + 4 + 5 + 3 = 15` FLOPs per parameter element, so a convenient accounting is
 
-`F_opt ≈ 15P,`
+$$
+F_{\text{opt}} \approx 15P,
+$$
 
 where
 
-`P = 2VD + L(16D^2 + 2D) + D`
+$$
+P = 2VD + L(16D^2 + 2D) + D
+$$
 
 is the total number of parameters. Therefore, one AdamW training step requires approximately
 
-`F_step ≈ F_forward + F_backward + F_opt = 3F_forward + 15P`
+$$
+F_{\text{step}} \approx F_{\text{forward}} + F_{\text{backward}} + F_{\text{opt}} = 3F_{\text{forward}} + 15P
+$$
 
-`= 3[L(32BTD^2 + 4BT^2D) + 2BTDV] + 15[2VD + L(16D^2 + 2D) + D].`
+$$
+= 3[L(32BTD^2 + 4BT^2D) + 2BTDV] + 15[2VD + L(16D^2 + 2D) + D].
+$$
 
 The dominant term is the forward/backward model computation; the optimizer update is lower-order in practice because it is only linear in the parameter count.
 
@@ -347,7 +421,25 @@ The dominant term is the forward/backward model computation; the optimizer updat
 **Deliverable:** The number of days training would take, with a brief justification.
 
 **Answer:**  
-Using the forward-pass result from `transformer_accounting`, GPT-2 XL requires `4,513,336,524,800` FLOPs per sequence of length `1024`. With batch size `1024`, this gives `4,621,656,601,395,200` forward FLOPs per training step. Using the approximation `backward = 2 x forward`, plus the AdamW optimizer cost `F_opt = 15P = 31,905,864,000`, one step costs approximately `13,865,001,710,049,600` FLOPs in total. Over `400,000` steps this is `5.54600068401984e21` FLOPs, and at `50%` MFU on a single A100 the effective throughput is `0.5 * 19.5e12 = 9.75e12` FLOP/s, so training would take about `6,583.6` days (about `18.0` years). This is a hypothetical throughput estimate and does not require the batch size to satisfy the separate memory constraint from part `(b)`.
+Using the forward-pass result from `transformer_accounting`, GPT-2 XL requires `4,513,336,524,800` FLOPs per sequence of length `1024`. With batch size `1024`, this gives `4,621,656,601,395,200` forward FLOPs per training step. Using the approximation `backward = 2 x forward`, plus the AdamW optimizer cost `F_opt = 15P = 31,905,864,000`, one step costs approximately
+
+$$
+13{,}865{,}001{,}710{,}049{,}600
+$$
+
+FLOPs in total. Over `400,000` steps this is
+
+$$
+5.54600068401984 \times 10^{21}
+$$
+
+FLOPs, and at `50%` MFU on a single A100 the effective throughput is
+
+$$
+0.5 \cdot 19.5 \times 10^{12} = 9.75 \times 10^{12}
+$$
+
+FLOP/s, so training would take about `6,583.6` days (about `18.0` years). This is a hypothetical throughput estimate and does not require the batch size to satisfy the separate memory constraint from part `(b)`.
 
 ---
 
