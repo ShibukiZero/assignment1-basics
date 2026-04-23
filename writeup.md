@@ -376,18 +376,18 @@ $$
 
 For the AdamW optimizer update itself, treating elementwise arithmetic as constant-cost operations, each parameter contributes a constant number of FLOPs for updating the first moment `m`, second moment `v`, the Adam parameter update, and the decoupled weight decay update. Concretely, for each parameter element:
 
-- first-moment update
-  `m <- beta_1 m + (1 - beta_1) g`
-  costs about `3` FLOPs (`2` multiplies and `1` addition),
-- second-moment update
-  `v <- beta_2 v + (1 - beta_2) g^2`
-  costs about `4` FLOPs (`1` multiply for `g^2`, `2` more multiplies, and `1` addition),
-- Adam parameter update
-  `theta <- theta - alpha_t m / (sqrt(v) + eps)`
-  costs about `5` FLOPs (`sqrt`, add `eps`, divide, multiply, subtract),
-- decoupled weight decay
-  `theta <- theta - alpha lambda theta`
-  costs about `3` FLOPs (`2` multiplies and `1` subtraction).
+- first-moment update:
+  $m \leftarrow \beta_1 m + (1 - \beta_1) g$
+  Costs about `3` FLOPs (`2` multiplies and `1` addition).
+- second-moment update:
+  $v \leftarrow \beta_2 v + (1 - \beta_2) g^2$
+  Costs about `4` FLOPs (`1` multiply for $g^2$, `2` more multiplies, and `1` addition).
+- Adam parameter update:
+  $\theta \leftarrow \theta - \alpha_t m / (\sqrt{v} + \epsilon)$
+  Costs about `5` FLOPs (`sqrt`, add $\epsilon$, divide, multiply, subtract).
+- decoupled weight decay:
+  $\theta \leftarrow \theta - \alpha \lambda \theta$
+  Costs about `3` FLOPs (`2` multiplies and `1` subtraction).
 
 This gives about $3 + 4 + 5 + 3 = 15$ FLOPs per parameter element, so a convenient accounting is
 
