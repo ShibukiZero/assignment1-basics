@@ -123,7 +123,7 @@ Using the OpenWebText tokenizer (32K) on a 50MB OpenWebText validation slice, me
 **Question:** Using your TinyStories and OpenWebText tokenizers, encode the respective training and development datasets into a sequence of integer token IDs. We'll use this later to train our language model. We recommend serializing the token IDs as a NumPy array of datatype `uint16`. Why is `uint16` an appropriate choice?  
 
 **Answer:**
-`uint16` is appropriate because both tokenizer vocabularies are far below 65,536 entries (TinyStories: 10,000; OpenWebText: 32,000), so every valid token ID fits safely in 16 bits. This cuts storage roughly in half versus `int32` while still preserving exact token IDs, and our encoding pipeline explicitly checks for overflow before casting to `uint16`, so successful corpus encoding confirms the dtype is valid for these tokenizers.
+`uint16` is appropriate because both tokenizer vocabularies are far below 65,536 entries (TinyStories: 10,000; OpenWebText: 32,000), so every valid token ID fits safely in 16 bits. This cuts storage roughly in half versus `int32` while still preserving exact token IDs, and the encoding pipeline explicitly checks for overflow before casting to `uint16`, so successful corpus encoding confirms the dtype is valid for these tokenizers.
 
 ---
 
@@ -222,7 +222,7 @@ $$
 $$
 
 Using this formula,
-I break the total into five components: attention projections, attention scores ($QK^T$), attention values ($A @ V$), FFN, and the LM head. The forward-pass FLOP breakdowns are:
+the total is broken into five components: attention projections, attention scores ($QK^T$), attention values ($A @ V$), FFN, and the LM head. The forward-pass FLOP breakdowns are:
 
 - **GPT-2 small**
   - attention projections: `57,982,058,496` FLOPs (`16.58%`)
@@ -355,7 +355,7 @@ $$
 
 bytes,
 
-where the linear term comes from activations and the constant term comes from parameters, gradients, and AdamW optimizer state. If we interpret `80GB` in decimal units as `80,000,000,000` bytes, then the maximum batch size is `2`, since $B = 3$ would require `80,586,181,632` bytes. (If one instead uses the binary convention $80\ \mathrm{GiB} = 80 \cdot 1024^3$ bytes, the answer would be `3`, but I use the decimal `80GB` wording from the prompt here.)
+where the linear term comes from activations and the constant term comes from parameters, gradients, and AdamW optimizer state. Interpreting `80GB` in decimal units as `80,000,000,000` bytes, the maximum batch size is `2`, since $B = 3$ would require `80,586,181,632` bytes. (If one instead uses the binary convention $80\ \mathrm{GiB} = 80 \cdot 1024^3$ bytes, the answer would be `3`, but the decimal `80GB` wording from the prompt is used here.)
 
 ### (c)
 **Question:** How many FLOPs does running one step of AdamW take?  
@@ -368,7 +368,7 @@ $$
 F_{\text{forward}} = L(32BTD^2 + 4BT^2D) + 2BTDV.
 $$
 
-Using the standard approximation that the backward pass costs twice the forward pass, we have
+Using the standard approximation that the backward pass costs twice the forward pass gives
 
 $$
 F_{\text{backward}} \approx 2F_{\text{forward}}.
@@ -446,11 +446,11 @@ FLOP/s, so training would take about `6,583.6` days (about `18.0` years). This i
 
 **Answer:**
 
-I reran the learning-rate search on the TinyStories baseline model using `batch_size=128`, since this batch size is a better fit for my hardware. The model configuration was otherwise unchanged (`vocab_size=10000`, `context_length=256`, `d_model=512`, `d_ff=1344`, `num_layers=4`, `num_heads=16`, `rope_theta=10000`). I used a two-stage search strategy: a broad 60-step pilot sweep to bracket the good region and the failure-side region, followed by a refined sweep around the local optimum.
+The learning-rate search was rerun on the TinyStories baseline model using `batch_size=128`, since this batch size is a better fit for the hardware. The model configuration was otherwise unchanged (`vocab_size=10000`, `context_length=256`, `d_model=512`, `d_ff=1344`, `num_layers=4`, `num_heads=16`, `rope_theta=10000`). A two-stage search strategy was used: a broad 60-step pilot sweep to bracket the good region and the failure-side region, followed by a refined sweep around the local optimum.
 
 The coarse sweep showed that the best region was near a few times `10^-3`, while much larger learning rates quickly degraded. In the refined sweep, the best learning rate was `4.0e-3`, with best validation loss `3.5015` at step `60`. Nearby values were all slightly worse (`2.5e-3 -> 3.5286`, `3.5e-3 -> 3.5669`, `4.5e-3 -> 3.7722`, `5.0e-3 -> 3.8112`), so the local optimum was clearly centered near `4e-3`.
 
-I then used `learning_rate=4.0e-3` for a longer training run with `warmup_iters=200`, `beta1=0.9`, `beta2=0.999`, `eps=1e-8`, and `weight_decay=0.1`. With `batch_size=128` and `10000` steps, this run processed exactly `327,680,000` tokens and reached best validation loss `1.3234` at step `10000`, comfortably beating the assignment target of `1.45`. This is therefore the final learning rate I selected for the TinyStories model under the `batch_size=128` setting.
+A longer training run then used `learning_rate=4.0e-3` with `warmup_iters=200`, `beta1=0.9`, `beta2=0.999`, `eps=1e-8`, and `weight_decay=0.1`. With `batch_size=128` and `10000` steps, this run processed exactly `327,680,000` tokens and reached best validation loss `1.3234` at step `10000`, comfortably beating the assignment target of `1.45`. This is therefore the final learning rate selected for the TinyStories model under the `batch_size=128` setting.
 
 ![Representative learning-rate sweep](artifacts/experiments/ch7/7_2_1/figures/val_loss_vs_step.png)
 
@@ -465,7 +465,7 @@ Figure: TinyStories validation-loss curves at `batch_size=128` for representativ
 
 The `batch_size=128` rerun suggests that the best learning rate is not exactly at the literal NaN boundary. The refined optimum was `4.0e-3`, but a range of larger values (`1.2e-2`, `2e-2`, `5e-2`) still trained for 60 steps without numerical blow-up while giving clearly worse validation loss. In other words, there is a substantial "stable but degraded" region above the optimum.
 
-At still larger learning rates, the runs entered a genuinely divergent optimization regime. In the same pilot setup, `1e-1` reached validation loss `5.4419`, `2e-1` reached `5.9544`, and `5e-1` reached `22.5846`; the highest-LR curve blows up rapidly and no longer makes meaningful optimization progress. Although these short pilots did not hit `NaN` within 60 steps, I still count the largest-LR runs as divergent in the optimization sense because the loss sharply departs from the stable training region and does not recover. So in this experiment the best learning rate is better described as lying below a broad degraded region and well below the clearly divergent high-LR regime, rather than exactly at the first point of numerical overflow.
+At still larger learning rates, the runs entered a genuinely divergent optimization regime. In the same pilot setup, `1e-1` reached validation loss `5.4419`, `2e-1` reached `5.9544`, and `5e-1` reached `22.5846`; the highest-LR curve blows up rapidly and no longer makes meaningful optimization progress. Although these short pilots did not hit `NaN` within 60 steps, the largest-LR runs still count as divergent in the optimization sense because the loss sharply departs from the stable training region and does not recover. So in this experiment the best learning rate is better described as lying below a broad degraded region and well below the clearly divergent high-LR regime, rather than exactly at the first point of numerical overflow.
 
 ![High-learning-rate behavior](artifacts/experiments/ch7/7_2_1/figures/val_loss_vs_step.png)
 
@@ -481,9 +481,9 @@ Figure: At `batch_size=128`, learning rates above the optimum quickly move from 
 
 **Answer:**
 
-I varied batch size from `1` up to the largest configuration that completed cleanly in my sweep (`512`) and re-tuned the learning rate locally for each batch size using short 400-step pilots with the same model architecture and optimizer settings. The best learning rates increased monotonically with batch size: `1.0e-3` for `bs=1/2/4/8`, `1.5e-3` for `bs=16`, `2.0e-3` for `bs=32`, `3.0e-3` for `bs=64`, `4.0e-3` for `bs=128`, `8.0e-3` for `bs=256`, and `6.0e-3` for `bs=512`.
+Batch size was varied from `1` up to the largest configuration that completed cleanly in the sweep (`512`), and the learning rate was re-tuned locally for each batch size using short 400-step pilots with the same model architecture and optimizer settings. The best learning rates increased monotonically with batch size: `1.0e-3` for `bs=1/2/4/8`, `1.5e-3` for `bs=16`, `2.0e-3` for `bs=32`, `3.0e-3` for `bs=64`, `4.0e-3` for `bs=128`, `8.0e-3` for `bs=256`, and `6.0e-3` for `bs=512`.
 
-At a fixed 400-step pilot budget, validation loss improved steadily as batch size increased. The best validation losses were `2.194` at `bs=64`, `1.961` at `bs=128`, `1.792` at `bs=256`, and `1.689` at `bs=512`. However, step time also increased substantially: about `0.257s/step` at `bs=128`, `0.495s/step` at `bs=256`, and `0.980s/step` at `bs=512`. In practice, `bs=128` is a good speed-oriented default, while `bs=256` is the best overall quality/throughput compromise on my hardware. `bs=512` gave the lowest pilot validation loss among the completed runs, but its per-step cost was much higher, so the marginal quality gain came with a large runtime penalty.
+At a fixed 400-step pilot budget, validation loss improved steadily as batch size increased. The best validation losses were `2.194` at `bs=64`, `1.961` at `bs=128`, `1.792` at `bs=256`, and `1.689` at `bs=512`. However, step time also increased substantially: about `0.257s/step` at `bs=128`, `0.495s/step` at `bs=256`, and `0.980s/step` at `bs=512`. In practice, `bs=128` is a good speed-oriented default, while `bs=256` is the best overall quality/throughput compromise on the hardware. `bs=512` gave the lowest pilot validation loss among the completed runs, but its per-step cost was much higher, so the marginal quality gain came with a large runtime penalty.
 
 ![Batch-size comparison](artifacts/experiments/ch7/7_2_2/figures/val_loss_vs_step.png)
 
@@ -509,9 +509,9 @@ Mia took the mint and showed it to her friends. They all looked at it and though
 
 **Commentary:**
 
-The sample is fluent and clearly matches the TinyStories style: it uses simple vocabulary, short sentences, and a coherent narrative arc with a beginning, development, and ending. The story stays on-topic, keeps the same protagonist throughout, and ends cleanly with `<|endoftext|>`, which is what I wanted from a small in-domain language model.
+The sample is fluent and clearly matches the TinyStories style: it uses simple vocabulary, short sentences, and a coherent narrative arc with a beginning, development, and ending. The story stays on-topic, keeps the same protagonist throughout, and ends cleanly with `<|endoftext|>`, which is the desired behavior for a small in-domain language model.
 
-Two main factors affect the output quality here. First, checkpoint quality matters directly: this sample came from the final `batch_size=128`, `learning_rate=4e-3` TinyStories model, which reached validation loss `1.323`, so the model had already learned the dataset's short-story structure well. Second, decoding hyperparameters matter: I used nucleus sampling with `temperature=0.8` and `top_p=0.9`, which gave a good balance between diversity and stability. Lower temperature would likely make the output more repetitive, while higher temperature would make it less coherent. A third factor is the simplicity of the TinyStories domain itself: because the dataset contains short, formulaic children's stories, even a relatively small model can sound quite fluent in-domain.
+Two main factors affect the output quality here. First, checkpoint quality matters directly: this sample came from the final `batch_size=128`, `learning_rate=4e-3` TinyStories model, which reached validation loss `1.323`, so the model had already learned the dataset's short-story structure well. Second, decoding hyperparameters matter: nucleus sampling with `temperature=0.8` and `top_p=0.9` was used, which gave a good balance between diversity and stability. Lower temperature would likely make the output more repetitive, while higher temperature would make it less coherent. A third factor is the simplicity of the TinyStories domain itself: because the dataset contains short, formulaic children's stories, even a relatively small model can sound quite fluent in-domain.
 
 ---
 
@@ -523,9 +523,9 @@ Two main factors affect the output quality here. First, checkpoint quality matte
 
 **Answer:**
 
-I removed all RMSNorm layers from the writeup-facing TinyStories baseline, including the final RMSNorm before the LM head, and first retrained using the previous best hyperparameters from the current writeup configuration: `batch_size=128`, `learning_rate=4.0e-3`, `warmup_iters=200`, `beta1=0.9`, `beta2=0.999`, `eps=1e-8`, and `weight_decay=0.1`. Early training still made progress, with validation loss decreasing from `4.0035` at step `50` to `2.8888` at step `150`, but the run became numerically unstable shortly afterward. At step `200`, when the warmup schedule had raised the learning rate to about `3.98e-3`, both train and validation loss became `NaN`, and all later diagnostics (`grad_norm_pre_clip`, `grad_norm_post_clip`, and `param_norm`) also stayed `NaN`.
+All RMSNorm layers were removed from the writeup-facing TinyStories baseline, including the final RMSNorm before the LM head, and the model was first retrained using the previous best hyperparameters from the current writeup configuration: `batch_size=128`, `learning_rate=4.0e-3`, `warmup_iters=200`, `beta1=0.9`, `beta2=0.999`, `eps=1e-8`, and `weight_decay=0.1`. Early training still made progress, with validation loss decreasing from `4.0035` at step `50` to `2.8888` at step `150`, but the run became numerically unstable shortly afterward. At step `200`, when the warmup schedule had raised the learning rate to about `3.98e-3`, both train and validation loss became `NaN`, and all later diagnostics (`grad_norm_pre_clip`, `grad_norm_post_clip`, and `param_norm`) also stayed `NaN`.
 
-I then searched over lower learning rates with the same no-RMSNorm architecture and found that `learning_rate=1.0e-3` was the best stable point in my coarse sweep over `{1.0e-3, 1.5e-3, 2.0e-3, 2.5e-3, 3.0e-3}`. In that sweep, `1.5e-3` eventually diverged as well, while `2.0e-3` and above already deteriorated much earlier. Using `learning_rate=1.0e-3`, I ran a longer `5000`-step confirmation experiment. This run remained numerically stable throughout, processed `163,840,000` tokens, and reached best validation loss `1.5492` at step `5000`.
+A search over lower learning rates with the same no-RMSNorm architecture found that `learning_rate=1.0e-3` was the best stable point in the coarse sweep over `{1.0e-3, 1.5e-3, 2.0e-3, 2.5e-3, 3.0e-3}`. In that sweep, `1.5e-3` eventually diverged as well, while `2.0e-3` and above already deteriorated much earlier. Using `learning_rate=1.0e-3`, a longer `5000`-step confirmation experiment was run. This run remained numerically stable throughout, processed `163,840,000` tokens, and reached best validation loss `1.5492` at step `5000`.
 
 These results show that RMSNorm is doing important stabilization work in the baseline model. The previous optimal learning rate is too high once normalization is removed: training does not merely degrade, it becomes numerically unstable during warmup. Lowering the learning rate to `1.0e-3` restores stable optimization, but performance is still substantially worse than the normalized baseline, whose tuned `batch_size=128`, `learning_rate=4e-3` run reached validation loss `1.3234`. In short, RMSNorm improves both optimization stability and quality under a fixed training budget.
 
@@ -542,7 +542,7 @@ Figure: Without RMSNorm, the previous optimal `learning_rate=4e-3` becomes unsta
 
 **Answer:**
 
-Starting from the same fixed TinyStories training setup used in the other architecture ablations (`batch_size=128`, `learning_rate=4e-3`, `warmup_iters=200`, `cosine_cycle_iters=10000`, `max_steps=5000`), I replaced the standard pre-norm Transformer blocks with post-norm ones and kept all other settings unchanged. Both the matched-horizon pre-norm baseline and the post-norm model trained stably for the full `5000` steps, so unlike the no-RMSNorm ablation, this change did not cause numerical failure under the baseline optimizer settings.
+Starting from the same fixed TinyStories training setup used in the other architecture ablations (`batch_size=128`, `learning_rate=4e-3`, `warmup_iters=200`, `cosine_cycle_iters=10000`, `max_steps=5000`), the standard pre-norm Transformer blocks were replaced with post-norm ones, with all other settings kept unchanged. Both the matched-horizon pre-norm baseline and the post-norm model trained stably for the full `5000` steps, so unlike the no-RMSNorm ablation, this change did not cause numerical failure under the baseline optimizer settings.
 
 However, post-norm converged noticeably worse than pre-norm. The matched-horizon pre-norm control reached validation loss `1.4656` at step `5000`, while the post-norm run only reached `1.5422` at the same step, a degradation of about `0.0766` validation-loss points. This indicates that even when post-norm remains trainable, pre-norm is still the better optimization choice for this model and budget: it gives consistently faster and better convergence.
 
@@ -559,7 +559,7 @@ Figure: Under the same TinyStories training hyperparameters, pre-norm converges 
 
 **Answer:**
 
-I next removed RoPE entirely and trained the resulting NoPE model with the same fixed hyperparameters as the matched-horizon baseline. The model remained trainable and continued improving throughout the `5000`-step run, which is consistent with the idea that a causal decoder can infer some positional structure even without explicit positional embeddings.
+RoPE was next removed entirely, and the resulting NoPE model was trained with the same fixed hyperparameters as the matched-horizon baseline. The model remained trainable and continued improving throughout the `5000`-step run, which is consistent with the idea that a causal decoder can infer some positional structure even without explicit positional embeddings.
 
 Even so, removing positional information clearly hurt performance. The RoPE baseline reached validation loss `1.4656` at step `5000`, whereas the NoPE model reached only `1.5676`, a gap of about `0.1020`. Among the three architecture ablations in this matched-horizon suite, NoPE was the worst. So while explicit positional embeddings are not strictly required for learning to proceed, they are still very important for good sample efficiency and final quality on this task.
 
@@ -575,7 +575,7 @@ Figure: Removing RoPE does not prevent learning, but the NoPE model converges su
 
 **Answer:**
 
-For this ablation I replaced SwiGLU with a plain SiLU feed-forward network, while increasing the inner feed-forward width to `d_ff = 4 * d_model = 2048` to approximately match parameter count, as requested in the handout. All optimizer and training hyperparameters were otherwise kept fixed to the same matched-horizon TinyStories baseline used above.
+For this ablation, SwiGLU was replaced with a plain SiLU feed-forward network, while increasing the inner feed-forward width to `d_ff = 4 * d_model = 2048` to approximately match parameter count, as requested in the handout. All optimizer and training hyperparameters were otherwise kept fixed to the same matched-horizon TinyStories baseline used above.
 
 This change produced the smallest degradation of the three ablations. The SwiGLU baseline reached validation loss `1.4656` at step `5000`, while the SiLU model reached `1.4781`, only about `0.0125` worse. So gating does help, and SwiGLU is still the better choice, but on this model scale and budget the advantage is modest compared with the much larger effects of normalization placement or removing positional information.
 
@@ -593,7 +593,7 @@ Figure: SwiGLU converges slightly better than a parameter-matched SiLU feed-forw
 
 **Answer:**
 
-For the OpenWebText main experiment, I kept the same Transformer stack and training horizon as in the TinyStories main run: `context_length=256`, `d_model=512`, `d_ff=1344`, `num_layers=4`, `num_heads=16`, pre-norm, RoPE, SwiGLU, `batch_size=128`, and `10000` optimizer steps. This again corresponds to exactly `327,680,000` processed tokens. Because OWT uses a different dataset and tokenizer, I re-tuned the learning rate at `batch_size=128` using a two-stage pilot sweep. A coarse sweep identified the best region near `2e-3` to `3e-3`, and a refined sweep over `{1.5e-3, 2.0e-3, 2.5e-3, 3.0e-3, 3.5e-3}` selected `learning_rate=2.5e-3`, with best pilot validation loss `5.2282` at step `400`.
+For the OpenWebText main experiment, the same Transformer stack and training horizon as in the TinyStories main run were kept: `context_length=256`, `d_model=512`, `d_ff=1344`, `num_layers=4`, `num_heads=16`, pre-norm, RoPE, SwiGLU, `batch_size=128`, and `10000` optimizer steps. This again corresponds to exactly `327,680,000` processed tokens. Because OWT uses a different dataset and tokenizer, the learning rate was re-tuned at `batch_size=128` using a two-stage pilot sweep. A coarse sweep identified the best region near `2e-3` to `3e-3`, and a refined sweep over `{1.5e-3, 2.0e-3, 2.5e-3, 3.0e-3, 3.5e-3}` selected `learning_rate=2.5e-3`, with best pilot validation loss `5.2282` at step `400`.
 
 Using that tuned learning rate, the final OWT run reached best validation loss `3.8886` at step `10000`. The run completed in about `3470.46` seconds (`57.8` minutes), so it stayed comfortably within the intended wall-clock budget. For comparison, the matched TinyStories rerun used for the joint learning-curve figure reached validation loss `1.3105` at the same `10000`-step horizon. The OWT model therefore trains successfully under the matched budget, but its absolute validation loss remains much higher than TinyStories.
 
@@ -612,7 +612,7 @@ Figure: The OWT run also remains within the wall-clock budget, finishing in unde
 
 **Answer:**
 
-I generated from the OWT checkpoint using the same decoding settings as the TinyStories sample for a fair comparison: prompt `"Once upon a time, there was"`, `max_new_tokens=256`, `temperature=0.8`, and `top_p=0.9`.
+Generation from the OWT checkpoint used the same decoding settings as the TinyStories sample for a fair comparison: prompt `"Once upon a time, there was"`, `max_new_tokens=256`, `temperature=0.8`, and `top_p=0.9`.
 
 **Generated text:**
 
@@ -628,7 +628,7 @@ One of my closest friends and colleagues I had in the last three months was a me
 A couple of years later I attended
 ```
 
-This sample is more coherent than the first noisy trial I observed during debugging, but it is still clearly worse than the TinyStories generation. The model does produce recognizable English prose and even settles into a plausible political-news/register shift, which is a reasonable match to OpenWebText. However, it still shows several quality problems: awkward opening repetition (`"one, one"`), entity/topic drift, repeated phrases around `"the party"` and `"Conservative Party"`, and an abrupt stop without reaching a clean ending or `<|endoftext|>` token within the decoding budget. So the model has learned broad stylistic fragments of web text, but it still struggles to maintain strong discourse structure over a longer continuation.
+This sample is more coherent than the first noisy trial observed during debugging, but it is still clearly worse than the TinyStories generation. The model does produce recognizable English prose and even settles into a plausible political-news/register shift, which is a reasonable match to OpenWebText. However, it still shows several quality problems: awkward opening repetition (`"one, one"`), entity/topic drift, repeated phrases around `"the party"` and `"Conservative Party"`, and an abrupt stop without reaching a clean ending or `<|endoftext|>` token within the decoding budget. So the model has learned broad stylistic fragments of web text, but it still struggles to maintain strong discourse structure over a longer continuation.
 
 There are several reasons the output quality is worse despite using the same architecture and compute budget. First, OWT is a much harder modeling problem than TinyStories, so the same small model must spread its capacity over many more topics, genres, and writing styles. Second, the prompt itself is still more naturally in-domain for TinyStories than for OWT: a fairy-tale opening is a direct fit for the children-story corpus, but on OWT it can push the model into an unstable mixture of narrative and political/news continuation modes. Third, repetition and unfinished continuations are typical symptoms of an undertrained small model on a broad corpus under stochastic decoding. Overall, this generation is qualitatively consistent with the validation-loss result from part (a): the model has learned local English fluency and some web-text style, but not the tighter global coherence that the TinyStories model achieved in-domain.
 
@@ -642,15 +642,15 @@ There are several reasons the output quality is worse despite using the same arc
 
 **Answer:**
 
-My final leaderboard recipe was a staged continuation recipe on OpenWebText. I first trained a stronger `8 x 1024` backbone (`8` layers, `d_model=1024`, `d_ff=2688`, `32` heads) with `context_length=256` and `batch_size=64`. I then continued from its best checkpoint with a larger context window and a smaller batch size, using `context_length=640`, `batch_size=32`, and a retuned continuation learning rate of about `1.7e-3`. On an H100, the best validation loss I obtained from this recipe was `3.6178` at training step `13080`.
+The final leaderboard recipe was a staged continuation recipe on OpenWebText. A stronger `8 x 1024` backbone (`8` layers, `d_model=1024`, `d_ff=2688`, `32` heads) was first trained with `context_length=256` and `batch_size=64`. Training then continued from its best checkpoint with a larger context window and a smaller batch size, using `context_length=640`, `batch_size=32`, and a retuned continuation learning rate of about `1.7e-3`. On an H100, the best validation loss obtained from this recipe was `3.6178` at training step `13080`.
 
 All wall-clock numbers reported here are direct H100 measurements. The staged run completed within the 1.5 H100-hour budget: the first stage took `2928.10` seconds, the second stage took `1082.56` seconds, and the full staged training run took `4010.65` seconds (`1.11` hours). The best validation point occurred after `3487.55` seconds on the cumulative evaluation-time curve.
 
-The decision process was staged. I first strengthened the OpenWebText baseline, then compared wider/deeper model variants under short matched-budget pilots. Those runs showed that extra depth alone was not cost-effective, while a wider model around `d_model=1024` was much more promising. After a coarse learning-rate sweep, the `8 x 1024` backbone became the main line. I then used continuation probes to map the context-length frontier: increasing context was useful, but only when I reduced batch size enough to fit in memory. This led to the final `ctx640, bs32` continuation setting. I also checked a smaller-model control line with longer context, but it never became competitive, which suggested that the gain came from combining a stronger backbone with a larger usable context window.
+The decision process was staged. The OpenWebText baseline was first strengthened, then wider/deeper model variants were compared under short matched-budget pilots. Those runs showed that extra depth alone was not cost-effective, while a wider model around `d_model=1024` was much more promising. After a coarse learning-rate sweep, the `8 x 1024` backbone became the main line. Continuation probes were then used to map the context-length frontier: increasing context was useful, but only when batch size was reduced enough to fit in memory. This led to the final `ctx640, bs32` continuation setting. A smaller-model control line with longer context was also checked, but it never became competitive, which suggested that the gain came from combining a stronger backbone with a larger usable context window.
 
 The figure below shows the full staged training curve with cumulative H100 wall-clock time. The first stage (`ctx256`, `bs64`) reached a best validation loss of `3.7979` at step `11900` and ended at `3.8283` at step `12400`. The second stage (`ctx640`, `bs32`) starts from that checkpoint and quickly gives an additional drop, reaching the overall best value `3.6178` at step `13080` after `3487.55` seconds of cumulative wall-clock time. The run continued to step `14200`, ending at validation loss `3.7579` after `4004.50` seconds on the plotted evaluation curve. The key qualitative feature is that most of the gain from the second stage arrives early, after which the loss oscillates instead of improving monotonically. In other words, increasing the effective context on top of the stronger backbone was clearly useful, but the best checkpoint occurred before the end of the continuation rather than at the final step.
 
-This result should be interpreted as a leaderboard-oriented continuation recipe rather than as a single uninterrupted from-scratch run. I think it is still informative because the final recipe came from a consistent sequence of small controlled decisions, and the final staged curve shows clearly where the additional gain came from.
+This result should be interpreted as a leaderboard-oriented continuation recipe rather than as a single uninterrupted from-scratch run. It is still informative because the final recipe came from a consistent sequence of small controlled decisions, and the final staged curve shows clearly where the additional gain came from.
 
 ![Validation loss versus cumulative wall-clock time for the final staged leaderboard recipe. The two colors correspond to the initial `ctx256, bs64` training stage and the subsequent `ctx640, bs32` continuation stage.](artifacts/experiments/ch7/7_5_1/figures/leaderboard_ctx640_bs32_segmented_recipe/val_loss_vs_wallclock.png)
 
