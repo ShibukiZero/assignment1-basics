@@ -39,7 +39,7 @@ def parse_args() -> argparse.Namespace:
         "--run-prefix",
         type=str,
         default="tinystories_lr_auto",
-        help="Run prefix used by run_learning_rate_sweep.py",
+        help="Run prefix used when naming learning-rate sweep runs.",
     )
     parser.add_argument(
         "--split",
