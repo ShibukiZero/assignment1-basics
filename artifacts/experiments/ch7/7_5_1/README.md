@@ -2,6 +2,12 @@
 
 This directory stores durable artifacts for the optional leaderboard section.
 
+The current writeup-facing segmented recipe artifacts are from the H100 rerun on
+2026-06-27. The best validation loss was `3.617796` at step `13080`, after
+`3487.55` seconds on the cumulative evaluation-time curve. The full staged
+training run completed in `4010.65` seconds (`1.11` hours), within the 1.5
+H100-hour budget.
+
 Recommended structure:
 
 - `figures/`
