@@ -57,7 +57,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--log-root",
         type=Path,
-        default=Path(".agents/logs"),
+        default=Path("runs/logs"),
         help="Directory containing per-run metrics.jsonl files.",
     )
     parser.add_argument(

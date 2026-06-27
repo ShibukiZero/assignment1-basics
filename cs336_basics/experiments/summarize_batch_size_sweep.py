@@ -33,7 +33,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--log-root",
         type=Path,
-        default=Path(".agents/logs"),
+        default=Path("runs/logs"),
     )
     parser.add_argument(
         "--output-dir",

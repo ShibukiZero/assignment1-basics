@@ -13,7 +13,6 @@ This directory stores the finalized tokenizer-training artifacts for OpenWebText
 - `report.json`: structured run summary (time/memory/longest token)
 - `vocab.json`: serialized vocabulary
 - `merges.json`: serialized BPE merges
-- `terminal.log`: terminal output from the run (with temporary merge progress logs)
 
 ## Key results (from `report.json`)
 - Elapsed seconds: `19508.986` (~5.42 hours)

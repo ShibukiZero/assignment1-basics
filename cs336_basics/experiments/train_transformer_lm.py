@@ -106,7 +106,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--output-dir", type=Path, required=True)
     parser.add_argument("--log-dir", type=Path, default=None)
     parser.add_argument("--run-name", type=str, default=None)
-    parser.add_argument("--tensorboard-root", type=Path, default=Path("/root/tf-logs"))
+    parser.add_argument("--tensorboard-root", type=Path, default=None)
     tensorboard_group = parser.add_mutually_exclusive_group()
     tensorboard_group.add_argument(
         "--enable-tensorboard",
@@ -294,10 +294,21 @@ def capture_cuda_memory_snapshot(device: torch.device) -> dict[str, int | None]:
     }
 
 
-def resolve_log_dir(*, requested_log_dir: Path | None, run_name: str) -> Path:
+def resolve_log_dir(*, requested_log_dir: Path | None, output_dir: Path) -> Path:
     if requested_log_dir is not None:
         return requested_log_dir
-    return Path(".agents/logs") / run_name
+    return output_dir / "logs"
+
+
+def resolve_tensorboard_dir(
+    *,
+    requested_tensorboard_root: Path | None,
+    output_dir: Path,
+    run_name: str,
+) -> Path:
+    if requested_tensorboard_root is not None:
+        return requested_tensorboard_root / run_name
+    return output_dir / "tensorboard"
 
 
 def make_run_config(
@@ -445,8 +456,12 @@ def main() -> None:
 
     args.output_dir.mkdir(parents=True, exist_ok=True)
     run_name = args.run_name or args.output_dir.name
-    log_dir = resolve_log_dir(requested_log_dir=args.log_dir, run_name=run_name)
-    tensorboard_dir = args.tensorboard_root / run_name
+    log_dir = resolve_log_dir(requested_log_dir=args.log_dir, output_dir=args.output_dir)
+    tensorboard_dir = resolve_tensorboard_dir(
+        requested_tensorboard_root=args.tensorboard_root,
+        output_dir=args.output_dir,
+        run_name=run_name,
+    )
     log_dir.mkdir(parents=True, exist_ok=True)
 
     train_tokens = load_token_array(args.train_npy)

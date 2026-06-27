@@ -14,7 +14,6 @@ This directory stores the finalized tokenizer-training artifacts for TinyStories
 - `vocab.json`: serialized vocabulary
 - `merges.json`: serialized BPE merges
 - `train.prof`: cProfile output
-- `terminal.log`: terminal output from the run
 
 ## Key results (from `report.json`)
 - Elapsed seconds: `63.333`

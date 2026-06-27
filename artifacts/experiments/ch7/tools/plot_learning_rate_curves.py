@@ -16,7 +16,7 @@ def parse_args() -> argparse.Namespace:
         action="append",
         required=True,
         metavar="LABEL=METRICS_JSONL",
-        help="Curve label and metrics path, e.g. 2e-3=.agents/logs/foo/metrics.jsonl",
+        help="Curve label and metrics path, e.g. 2e-3=runs/logs/foo/metrics.jsonl",
     )
     parser.add_argument(
         "--output-dir",
